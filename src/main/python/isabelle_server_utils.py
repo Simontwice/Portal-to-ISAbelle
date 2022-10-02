@@ -2,8 +2,9 @@ import subprocess
 from time import sleep
 import pathlib
 
-from pisa.find_pisa_path import find_pisa_path
 
+def find_pisa_path():
+    return pathlib.Path(__file__).parent.resolve()
 
 class IsabelleServerTmuxConnection:
     def __init__(self, compile_pisa=True):
