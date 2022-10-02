@@ -1,16 +1,37 @@
 from __future__ import print_function
 
 import os
-import json
 import grpc
 
-from copy import copy
-from func_timeout import func_set_timeout
+from func_timeout import func_set_timeout, FunctionTimedOut
+from typing import List
 
-import server_pb2
-import server_pb2_grpc
+from pisa.src.main.python import server_pb2, server_pb2_grpc
+from pathlib import Path
+from src.main.python.misc_utils import trim_string_optional, process_raw_global_facts, process_raw_facts
 
 MAX_MESSAGE_LENGTH = 10485760
+
+class EmptyInitialStateException(Exception):
+    pass
+
+class EnvInitFailedException(Exception):
+    pass
+
+class ProceedToLineFailedException(Exception):
+    pass
+
+class StepToTopLevelStateException(Exception):
+    pass
+
+class AvailableFactsExtractionError(Exception):
+    pass
+
+class AvailableFactsTimeout(Exception):
+    pass
+
+class _InactiveRpcError(Exception):
+    pass
 
 
 def create_stub(port=9000):
@@ -63,7 +84,6 @@ class IsaFlexEnv:
 
     @func_set_timeout(36, allowOverride=True)
     def step_to_top_level_state(self, action, tls_name, new_name):
-        # last_obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<get state> {tls_name}")).state
         obs_string = "Step error"
         done = False
         try:
@@ -74,7 +94,6 @@ class IsaFlexEnv:
             print(e)
 
         done = self.is_finished(new_name)
-        # done = True if ("subgoal" in last_obs_string and "subgoal" not in obs_string) else False
         return obs_string, self.reward(done), done, {}
 
     def proceed_after(self, line_string):
@@ -86,38 +105,6 @@ class IsaFlexEnv:
     @func_set_timeout(60, allowOverride=True)
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
-        # last_obs_string = self.obs_string
-        # try:
-        #     self.obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
-        # except Exception as e:
-        #     print("***Something went wrong***")
-        #     print(e)
-
-        # # done = self.is_finished(self.obs_string)
-        # done = self.is_finished("default")
-
-        # return self.obs_string, self.reward(done), done, {}
-
-    # def human_play(self):
-    #     done = False
-    #     while not done:
-    #         print(self.obs_string)
-    #         human_proof_line = input("Your tactic is my command: ")
-    #         if human_proof_line == "exit":
-    #             break
-    #         else:
-    #             obs, _, done, _ = self.step(human_proof_line)
-    #             print(obs)
-    #             print("=" * 50)
-
-    # def clone_top_level_state(self, tls_name):
-    #     try:
-    #         message = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<clone> {tls_name}")).state
-    #         print(message)
-    #         print(f"Cloned state called {tls_name}")
-    #     except Exception as e:
-    #         print("**Clone unsuccessful**")
-    #         print(e)
 
     def proceed_to_line(self, line_stirng, before_after):
         assert before_after in ["before", "after"]
@@ -129,39 +116,141 @@ class IsaFlexEnv:
         except Exception as e:
             print("Failure to proceed before line")
             print(e)
+            raise NotImplementedError
+
+    def local_facts(self, tls_name="default"):
+        try:
+            return self.post(f"<local facts and defs> {tls_name}")
+        except:
+            return "failed"
+
+    def global_facts(self, tls_name="default"):
+        try:
+            facts = self.post(f"<global facts and defs> {tls_name}")
+            return facts
+        except FunctionTimedOut:
+            raise AvailableFactsTimeout
+
+    def all_facts_processed(self, dataset_extraction=False):
+        _global = self.global_facts()
+        _local = self.local_facts()
+
+        if dataset_extraction:
+            processed_global = process_raw_global_facts(_global)
+        else:
+            processed_global = process_raw_facts(_global)
+        processed_local = process_raw_facts(_local)
+        processed_global.update(processed_local)
+        processed_global = dict(
+            filter(lambda item: not item[0].startswith("??"), processed_global.items())
+        )
+
+        return processed_global
+
+    def translate_premise_names(self, isabelle_state, premise_names: List[str]):
+        """
+
+        Args:
+            premise_names: list of premise names, some of them of the form *_{n} for some natural n >= 1
+
+        Returns:
+            a corrected list of the names, where each of the names is validated to be visible in the env. Some _{n} are transformed to (n), as appropriate.
+            It is possible that both _{n} and (n) are returned for some names.
+
+        """
+        corrected_premise_names: List[str] = []
+        non_suspect_premises: List[str] = []
+
+        for premise in premise_names:
+
+            suffix = premise.split("_")[-1]
+            prefix = premise.rsplit("_", 1)[0]
+
+            if suffix.isdigit():
+                premise_alternative = f"{prefix}({suffix})"
+                corrected_premise_names.append(premise_alternative)
+                corrected_premise_names.append(premise)
+            else:
+                non_suspect_premises.append(premise)
+
+        isa_steps = [f"using {premise}" for premise in corrected_premise_names]
+        successful_steps: List[str] = []
+        for step in isa_steps:
+
+            next_proof_state, _, done, _ = self.step_to_top_level_state(
+                step,
+                isabelle_state.proof_state_id,
+                -1,
+            )
+
+            next_proof_state_clean = trim_string_optional(next_proof_state)
+            step_correct = next_proof_state_clean not in [None, "", "Step error"]
+            if step_correct:
+                successful_steps.append(step)
+
+        translated_premises = [step.split()[-1] for step in successful_steps]
+        sus_and_nonsus_premises = translated_premises + non_suspect_premises
+
+        return sus_and_nonsus_premises
 
 
-def parsed_json_to_env_and_dict(path_to_json, afp_path, port=9000, isa_path="/Applications/Isabelle2020.app/Isabelle"):
-    save_dict = json.load(open(path_to_json))
-    project = save_dict["project"]
-    wd = os.path.join(afp_path, "thys", project)
-    segments = save_dict["segments"]
-    # Find starter string
-    starter_string = None
-    for line in segments:
-        if line.strip().startswith("theory"):
-            starter_string = " ".join(line.strip().split("\n"))
-            break
-    assert starter_string
-    # print(port, isa_path, starter_string, wd, segments)
-    return IsaFlexEnv(port=port, isa_path=isa_path,
-                     starter_string=starter_string,
-                     working_directory=wd), save_dict
+def initialise_env(port, isa_path, theory_file_path=None, working_directory=None, test_theorems_only=False):
+    if working_directory is None:
+        actual_working_dir_candidate = str(Path(theory_file_path).parents[0])
+        i = 0
+        success = False
+        # if we are only concerned with universal_test_theorems, then the working_directory path is one that ends with /thys/xyz and the task is much simpler
+        if test_theorems_only:
+            layers = theory_file_path.split("/")
+            while layers[-2] != "thys" and len(layers) > 2:
+                layers = layers[:-1]
+            try:
+                assert layers[-2] == "thys"
+                working_directory = os.path.join(*layers)
+                if not working_directory.startswith("/"):
+                    working_directory = "/" + working_directory.strip()
 
+                env = IsaFlexEnv(port=port, isa_path=isa_path, starter_string=theory_file_path,
+                                  working_directory=working_directory)
+                success = True
+            except AssertionError:
+                raise NotImplementedError
 
-def initialise_env(port, isa_path, theory_file_path=None, working_directory=None):
-    return IsaFlexEnv(port=port, isa_path=isa_path, starter_string=theory_file_path, working_directory=working_directory)
-
-
-def initialise_problem(env, problem_name):
-    env.proceed_to_line(problem_name, "after")
+        # in case of dataset extraction etc, we have to be more generic
+        else:
+            while not success and i < 10:
+                try:
+                    env = IsaFlexEnv(
+                        port=port,
+                        isa_path=isa_path,
+                        starter_string=theory_file_path,
+                        working_directory=actual_working_dir_candidate,
+                    )
+                    success = True
+                except:
+                    actual_working_dir_candidate = str(
+                        Path(actual_working_dir_candidate).parents[0]
+                    )
+                    i += 1
+        if success:
+            print(
+                f"Automatically detected working directory: {actual_working_dir_candidate}"
+            )
+        else:
+            print(
+                f"Did not manage to detect working directory: {actual_working_dir_candidate}"
+            )
+            raise EnvInitFailedException
     return env
 
+@func_set_timeout(10, allowOverride=True)
+def initialise_toplevel_state_map(self):
+    try:
+        obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
+        print(obs_string)
+    except Exception as e:
+        print("**Unsuccessful initialisation**")
+        raise ProceedToLineFailedException
 
-if __name__ == '__main__':
-    env = initialise_env(8000, 
-        working_directory="/Applications/Isabelle2021.app/src/HOL/Examples",
-        isa_path="/Applications/Isabelle2021.app", 
-        theory_file_path="/Applications/Isabelle2021.app/src/HOL/Examples/Adhoc_Overloading_Examples.thy"
-    )
-    print(env.post("<get_ancestors>"))
+
+
