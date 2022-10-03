@@ -4,7 +4,7 @@ import pathlib
 
 
 def find_pisa_path():
-    return pathlib.Path(__file__).parent.resolve()
+    return pathlib.Path(__file__).parents[3].resolve()
 
 class IsabelleServerTmuxConnection:
     def __init__(self, compile_pisa=True):

@@ -8,7 +8,7 @@ from typing import List
 
 from pisa.src.main.python import server_pb2, server_pb2_grpc
 from pathlib import Path
-from src.main.python.misc_utils import trim_string_optional, process_raw_global_facts, process_raw_facts
+from pisa.src.main.python.misc_utils import trim_string_optional, process_raw_global_facts, process_raw_facts
 
 MAX_MESSAGE_LENGTH = 10485760
 
@@ -193,6 +193,15 @@ class IsaFlexEnv:
 
         return sus_and_nonsus_premises
 
+    @func_set_timeout(10, allowOverride=True)
+    def initialise_toplevel_state_map(self):
+        try:
+            obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
+            print(obs_string)
+        except Exception as e:
+            print("**Unsuccessful initialisation**")
+            raise ProceedToLineFailedException
+
 
 def initialise_env(port, isa_path, theory_file_path=None, working_directory=None, test_theorems_only=False):
     if working_directory is None:
@@ -243,14 +252,6 @@ def initialise_env(port, isa_path, theory_file_path=None, working_directory=None
             raise EnvInitFailedException
     return env
 
-@func_set_timeout(10, allowOverride=True)
-def initialise_toplevel_state_map(self):
-    try:
-        obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
-        print(obs_string)
-    except Exception as e:
-        print("**Unsuccessful initialisation**")
-        raise ProceedToLineFailedException
 
 
 
