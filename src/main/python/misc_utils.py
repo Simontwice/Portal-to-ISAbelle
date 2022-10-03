@@ -1,5 +1,4 @@
 from typing import Optional
-from PisaFlexibleClient import AvailableFactsExtractionError
 
 def trim_string_optional(input_string: Optional[str]) -> Optional[str]:
     if input_string is None:
@@ -14,7 +13,7 @@ def process_raw_facts(raw_string):
             raw_string
             == 'de.unruh.isabelle.control.IsabelleException: exception UNDEF raised (line 183 of "Isar/toplevel.ML")'
     ):
-        raise AvailableFactsExtractionError
+        raise NotImplementedError
     list_of_string_tuples = raw_string.split("<SEP>")
     global_fact_dict = {}
     for element in list_of_string_tuples:
@@ -31,7 +30,7 @@ def process_raw_global_facts(raw_string):
         raw_string
         == 'de.unruh.isabelle.control.IsabelleException: exception UNDEF raised (line 183 of "Isar/toplevel.ML")'
     ):
-        raise AvailableFactsExtractionError
+        raise NotImplementedError
     list_of_string_tuples = raw_string.split("<SEP>")
     global_fact_dict = {}
     for element in list_of_string_tuples:
