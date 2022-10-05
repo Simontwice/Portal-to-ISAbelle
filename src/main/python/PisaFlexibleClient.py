@@ -10,7 +10,7 @@ from pisa.src.main.python import server_pb2, server_pb2_grpc
 from pathlib import Path
 from pisa.src.main.python.misc_utils import trim_string_optional, process_raw_global_facts, process_raw_facts
 
-MAX_MESSAGE_LENGTH = 10485760
+MAX_MESSAGE_LENGTH = 100485760
 
 class EmptyInitialStateException(Exception):
     pass
