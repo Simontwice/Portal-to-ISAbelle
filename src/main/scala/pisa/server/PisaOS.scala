@@ -346,7 +346,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   //      |      val thy = Proof_Context.theory_of ctxt
   //      |      val p_state = Toplevel.proof_of state;
   //      |      val params = ${Sledgehammer_Commands}.default_params thy
-  //      |                      [("isar_proofs", "false"),("smt_proofs", "true"),("learn","true")]
+  //      |                      [("isar_proofs", "false"),("smt_proofs", "false"),("learn","true")]
   //      |      val override = {add=[],del=[],only=false}
   //      |      val run_sledgehammer = ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Auto_Try
   //      |                                  NONE 1 override
@@ -367,7 +367,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
        |      val thy = Proof_Context.theory_of ctxt;
        |      val p_state = Toplevel.proof_of state;
        |      val params = ${Sledgehammer_Commands}.default_params thy
-       |                      [("provers", "cvc4 e spass vampire z3"),("isar_proofs", "false"),("smt_proofs", "true"),("learn","true"),("timeout","30"),("preplay_timeout","2")]
+       |                      [("provers", "cvc4 e spass vampire z3"),("isar_proofs", "false"),("smt_proofs", "false"),("learn","true"),("timeout","30"),("preplay_timeout","2")]
        |      val override = {add=[],del=[],only=false}
        |      val res_list = Synchronized.var "res_list" [];
        |      val writeln_results = SOME (fn s => Synchronized.change res_list (fn ll => cons s ll));
@@ -386,7 +386,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
        |      val p_state = Toplevel.proof_of state;
        |      val ctxt = Proof.context_of p_state;
        |      val params = ${Sledgehammer_Commands}.default_params thy
-       |            [("provers", "z3 cvc4 spass vampire e"),("timeout","30"),("preplay_timeout","0"),("minimize","false"),("isar_proofs", "false"),("smt_proofs", "true"),("learn","true")];
+       |            [("provers", "z3 cvc4 spass vampire e"),("timeout","30"),("preplay_timeout","0"),("minimize","false"),("isar_proofs", "false"),("smt_proofs", "false"),("learn","true")];
        |      val override = {add=[],del=[],only=false}
        |    in
        |      ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Auto_Try NONE 1 override p_state
