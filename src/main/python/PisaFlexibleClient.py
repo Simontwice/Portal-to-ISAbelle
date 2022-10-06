@@ -223,7 +223,7 @@ def initialise_env(port, isa_path, theory_file_path=None, working_directory=None
                                   working_directory=working_directory)
                 success = True
             except AssertionError:
-                raise NotImplementedError
+                raise EnvInitFailedException
 
         # in case of dataset extraction etc, we have to be more generic
         else:
