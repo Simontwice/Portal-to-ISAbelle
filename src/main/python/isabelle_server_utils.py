@@ -41,11 +41,11 @@ class IsabelleServerTmuxConnection:
 
     def check_is_running(self, port):
         out = self.read_tmux(port)
-        return "Server is running" in out[-30:]
+        return "Server is running" in out[-100:]
 
     def check_sbt_compilation(self, port):
         out = self.read_tmux(port)
-        return "[success]" in out[-30:]
+        return "[success]" in out[-100:]
 
     def stop_isabelle_server(self, port):
         self.send_command_to_tmux("C-c", self.port_to_session(port))
