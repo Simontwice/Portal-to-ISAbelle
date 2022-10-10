@@ -4,7 +4,6 @@ import pathlib
 
 
 def find_pisa_path():
-    breakpoint()
     path = pathlib.Path(__file__)
     while not str(path).endswith("/pisa"):
         path = path.parents[0]
