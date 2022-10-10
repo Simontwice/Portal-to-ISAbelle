@@ -114,7 +114,7 @@ class IsaFlexEnv:
             message = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=command)).state
             print(message)
         except Exception as e:
-            print("Failure to proceed before line")
+            print(f"Failure to proceed {before_after} line")
             print(e)
             raise NotImplementedError
 
@@ -193,7 +193,7 @@ class IsaFlexEnv:
 
         return sus_and_nonsus_premises
 
-    @func_set_timeout(10, allowOverride=True)
+    @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
         try:
             obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
@@ -223,7 +223,7 @@ def initialise_env(port, isa_path, theory_file_path=None, working_directory=None
                                   working_directory=working_directory)
                 success = True
             except AssertionError:
-                raise EnvInitFailedException
+                raise NotImplementedError
 
         # in case of dataset extraction etc, we have to be more generic
         else:

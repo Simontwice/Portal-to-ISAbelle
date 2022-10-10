@@ -4,7 +4,11 @@ import pathlib
 
 
 def find_pisa_path():
-    return pathlib.Path(__file__).parents[3].resolve()
+    breakpoint()
+    path = pathlib.Path(__file__)
+    while not str(path).endswith("/pisa"):
+        path = path.parents[0]
+    return path.resolve()
 
 class IsabelleServerTmuxConnection:
     def __init__(self, compile_pisa=True):
@@ -94,6 +98,7 @@ class IsabelleServerTmuxConnection:
                         self.compile_pisa = False
                         break
                     sleep(1)
+                assert self.check_sbt_compilation(port)
 
             self.send_command_to_tmux(
                 f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
@@ -104,7 +109,7 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
-
+            assert self.check_is_running(port)
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
