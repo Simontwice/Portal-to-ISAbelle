@@ -116,7 +116,7 @@ class IsaFlexEnv:
         except Exception as e:
             print(f"Failure to proceed {before_after} line")
             print(e)
-            raise NotImplementedError
+            raise ProceedToLineFailedException
 
     def local_facts(self, tls_name="default"):
         try:
@@ -223,7 +223,7 @@ def initialise_env(port, isa_path, theory_file_path=None, working_directory=None
                                   working_directory=working_directory)
                 success = True
             except AssertionError:
-                raise NotImplementedError
+                raise EnvInitFailedException
 
         # in case of dataset extraction etc, we have to be more generic
         else:
