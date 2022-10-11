@@ -15,6 +15,9 @@ MAX_MESSAGE_LENGTH = 100485760
 class EmptyInitialStateException(Exception):
     pass
 
+class InitFailedException(Exception):
+    pass
+
 class EnvInitFailedException(Exception):
     pass
 
@@ -200,7 +203,7 @@ class IsaFlexEnv:
             print(obs_string)
         except Exception as e:
             print("**Unsuccessful initialisation**")
-            raise ProceedToLineFailedException
+            raise InitFailedException
 
 
 def initialise_env(port, isa_path, theory_file_path=None, working_directory=None, test_theorems_only=False):
