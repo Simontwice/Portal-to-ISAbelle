@@ -38,8 +38,10 @@ class IsabelleServerTmuxConnection:
             capture_output=True,
         ).stdout.decode("utf-8")
 
-    def check_is_running(self, port):
+    def check_is_running(self, port, report=False):
         out = self.read_tmux(port)
+        if report:
+            print(out[-100:])
         return "Server is running" in out[-100:]
 
     def check_sbt_compilation(self, port):
@@ -61,8 +63,10 @@ class IsabelleServerTmuxConnection:
             if self.check_is_running(port):
                 break
             sleep(1)
-        assert self.check_is_running(port)
-        # breakpoint()
+        try:
+            assert self.check_is_running(port,report=True)
+        except:
+            breakpoint()
         print(
             f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
         )
