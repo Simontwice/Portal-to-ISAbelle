@@ -7,7 +7,6 @@ def find_pisa_path():
     path = pathlib.Path(__file__)
     while not str(path).endswith("/pisa"):
         path = path.parents[0]
-    breakpoint()
     return path.resolve()
 
 class IsabelleServerTmuxConnection:
@@ -64,10 +63,8 @@ class IsabelleServerTmuxConnection:
             if self.check_is_running(port):
                 break
             sleep(1)
-        try:
-            assert self.check_is_running(port,report=True)
-        except:
-            breakpoint()
+        assert self.check_is_running(port,report=True)
+
         print(
             f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
         )
@@ -114,10 +111,8 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
-            try:
-                assert self.check_is_running(port,report=True)
-            except:
-                breakpoint()
+            assert self.check_is_running(port,report=True)
+
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
