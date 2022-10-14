@@ -7,6 +7,7 @@ def find_pisa_path():
     path = pathlib.Path(__file__)
     while not str(path).endswith("/pisa"):
         path = path.parents[0]
+    breakpoint()
     return path.resolve()
 
 class IsabelleServerTmuxConnection:
