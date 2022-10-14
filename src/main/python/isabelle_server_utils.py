@@ -113,7 +113,10 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
-            assert self.check_is_running(port)
+            try:
+                assert self.check_is_running(port,report=True)
+            except:
+                breakpoint()
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
