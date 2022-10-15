@@ -13,7 +13,7 @@ class IsabelleServerTmuxConnection:
     def __init__(self, compile_pisa=True):
         self.used_ports = set()
         self.accessible_ports = [i * 1000 for i in range(8, 15)]
-        self.num_trials = 60
+        self.num_trials = 180
         self.compile_pisa = compile_pisa
 
     def port_to_session(self, port):
