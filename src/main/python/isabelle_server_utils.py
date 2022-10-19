@@ -53,8 +53,16 @@ class IsabelleServerTmuxConnection:
 
     def restart_isabelle_server(self, port):
         self.stop_isabelle_server(port)
+        stop_string = "[error] Use 'last' for the full log"
         sleep(1)
-        print(f"server stopped")
+        for _ in range(5):
+            if stop_string in self.read_tmux(port)[-100:]:
+                break
+            else:
+                self.stop_isabelle_server(port)
+                sleep(1)
+        assert stop_string in self.read_tmux(port)[-100:]
+        print(f"server stopped, time to restart")
         self.send_command_to_tmux(
             f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
             self.port_to_session(port),
@@ -64,7 +72,6 @@ class IsabelleServerTmuxConnection:
                 break
             sleep(1)
         assert self.check_is_running(port,report=True)
-
         print(
             f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
         )
