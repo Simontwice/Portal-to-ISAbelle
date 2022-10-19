@@ -59,7 +59,6 @@ class IsabelleServerTmuxConnection:
             if stop_string in self.read_tmux(port)[-100:]:
                 break
             else:
-                self.stop_isabelle_server(port)
                 sleep(1)
         assert stop_string in self.read_tmux(port)[-100:]
         print(f"server stopped, time to restart")
@@ -71,6 +70,7 @@ class IsabelleServerTmuxConnection:
             if self.check_is_running(port):
                 break
             sleep(1)
+        sleep(5)
         assert self.check_is_running(port,report=True)
         print(
             f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
@@ -119,6 +119,7 @@ class IsabelleServerTmuxConnection:
                     break
                 sleep(1)
             assert self.check_is_running(port,report=True)
+            sleep(5)
 
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
