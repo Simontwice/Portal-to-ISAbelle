@@ -188,9 +188,8 @@ class IsaFlexEnv:
                 -1,
             )
 
-            breakpoint()
             next_proof_state_clean = trim_string_optional(next_proof_state)
-            step_correct = next_proof_state_clean not in [None, "", "Step error"]
+            step_correct = "Step error: Undefined fact" not in next_proof_state_clean
             if step_correct:
                 successful_steps.append(step)
 
