@@ -202,6 +202,7 @@ class IsaFlexEnv:
         try:
             obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
             print(obs_string)
+            return obs_string
         except Exception as e:
             print("**Unsuccessful initialisation**")
             raise InitFailedException
