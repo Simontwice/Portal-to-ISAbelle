@@ -117,6 +117,7 @@ class IsaFlexEnv:
             print(command)
             message = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=command)).state
             print(message)
+            return message
         except Exception as e:
             print(f"Failure to proceed {before_after} line")
             print(e)
