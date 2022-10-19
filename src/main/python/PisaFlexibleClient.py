@@ -188,6 +188,7 @@ class IsaFlexEnv:
                 -1,
             )
 
+            breakpoint()
             next_proof_state_clean = trim_string_optional(next_proof_state)
             step_correct = next_proof_state_clean not in [None, "", "Step error"]
             if step_correct:
