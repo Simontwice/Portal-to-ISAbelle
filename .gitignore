@@ -123,3 +123,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+#src_old from copying
+.src_old/

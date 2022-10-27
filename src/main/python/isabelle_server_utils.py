@@ -4,13 +4,16 @@ import pathlib
 
 
 def find_pisa_path():
-    return pathlib.Path(__file__).parents[3].resolve()
+    path = pathlib.Path(__file__)
+    while not str(path).endswith("/pisa"):
+        path = path.parents[0]
+    return path.resolve()
 
 class IsabelleServerTmuxConnection:
     def __init__(self, compile_pisa=True):
         self.used_ports = set()
         self.accessible_ports = [i * 1000 for i in range(8, 15)]
-        self.num_trials = 30
+        self.num_trials = 180
         self.compile_pisa = compile_pisa
 
     def port_to_session(self, port):
@@ -35,33 +38,51 @@ class IsabelleServerTmuxConnection:
             capture_output=True,
         ).stdout.decode("utf-8")
 
-    def check_is_running(self, port):
+    def check_is_running(self, port, report=False):
         out = self.read_tmux(port)
-        return "Server is running" in out[-30:]
+        if report:
+            print(out[-100:])
+        return "Server is running" in out[-100:]
 
     def check_sbt_compilation(self, port):
         out = self.read_tmux(port)
-        return "[success]" in out[-30:]
+        return "[success]" in out[-100:]
 
     def stop_isabelle_server(self, port):
         self.send_command_to_tmux("C-c", self.port_to_session(port))
 
     def restart_isabelle_server(self, port):
         self.stop_isabelle_server(port)
+        stop_string = "[error] Use 'last' for the full log"
         sleep(1)
-        print(f"server stopped")
-        self.send_command_to_tmux(
-            f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
-            self.port_to_session(port),
-        )
-        for _ in range(self.num_trials):
-            if self.check_is_running(port):
+        for _ in range(5):
+            if stop_string in self.read_tmux(port)[-100:]:
                 break
-            sleep(1)
+            else:
+                sleep(1)
+        try:
+            #soft reset
+            assert stop_string in self.read_tmux(port)[-100:]
+            print(f"server stopped, time to restart")
+            self.send_command_to_tmux(
+                f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
+                self.port_to_session(port),
+            )
+            for _ in range(self.num_trials):
+                if self.check_is_running(port):
+                    break
+                sleep(1)
+            sleep(5)
+            assert self.check_is_running(port, report=True)
+            print(
+                f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
+            )
+        except:
+            #hard reset, by close + start
+            self.close_isabelle_server(port)
+            self.start_isabelle_server(port)
 
-        print(
-            f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
-        )
+
 
     def restart_many_servers(self, ports, stop_previous=True):
         for port in ports:
@@ -94,6 +115,7 @@ class IsabelleServerTmuxConnection:
                         self.compile_pisa = False
                         break
                     sleep(1)
+                assert self.check_sbt_compilation(port)
 
             self.send_command_to_tmux(
                 f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
@@ -104,6 +126,8 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
+            assert self.check_is_running(port,report=True)
+            sleep(5)
 
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"

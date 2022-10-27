@@ -15,6 +15,9 @@ MAX_MESSAGE_LENGTH = 100485760
 class EmptyInitialStateException(Exception):
     pass
 
+class InitFailedException(Exception):
+    pass
+
 class EnvInitFailedException(Exception):
     pass
 
@@ -76,13 +79,14 @@ class IsaFlexEnv:
             print(self.stub.IsabelleWorkingDirectory(server_pb2.IsaPath(path=self.working_directory)).message)
             print(self.stub.IsabelleContext(server_pb2.IsaContext(context=self.starter_string)).message)
             self.successful_starting = True
+            print("Successfully initialised an Isabelle process")
         except Exception as e:
             print("Failure at initialising Isabelle process. "
                   "Make sure the path your provide is where the Isabelle executable is.")
             print(e)
         return self.obs_string
 
-    @func_set_timeout(36, allowOverride=True)
+    @func_set_timeout(1800, allowOverride=True)
     def step_to_top_level_state(self, action, tls_name, new_name):
         obs_string = "Step error"
         done = False
@@ -102,7 +106,7 @@ class IsaFlexEnv:
     def clone_to_new_name(self, new_name):
         return self.post(f"<clone> default <clone> {new_name}", forceTimeout=10)
 
-    @func_set_timeout(60, allowOverride=True)
+    @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
 
@@ -113,10 +117,11 @@ class IsaFlexEnv:
             print(command)
             message = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=command)).state
             print(message)
+            return message
         except Exception as e:
-            print("Failure to proceed before line")
+            print(f"Failure to proceed {before_after} line")
             print(e)
-            raise NotImplementedError
+            raise ProceedToLineFailedException
 
     def local_facts(self, tls_name="default"):
         try:
@@ -185,7 +190,7 @@ class IsaFlexEnv:
             )
 
             next_proof_state_clean = trim_string_optional(next_proof_state)
-            step_correct = next_proof_state_clean not in [None, "", "Step error"]
+            step_correct = "Step error: Undefined fact" not in next_proof_state_clean
             if step_correct:
                 successful_steps.append(step)
 
@@ -194,14 +199,15 @@ class IsaFlexEnv:
 
         return sus_and_nonsus_premises
 
-    @func_set_timeout(10, allowOverride=True)
+    @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
         try:
             obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
             print(obs_string)
+            return obs_string
         except Exception as e:
             print("**Unsuccessful initialisation**")
-            raise ProceedToLineFailedException
+            raise InitFailedException
 
 
 def initialise_env(port, isa_path, theory_file_path=None, working_directory=None, test_theorems_only=False):
