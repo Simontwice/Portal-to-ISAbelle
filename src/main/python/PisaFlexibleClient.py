@@ -176,6 +176,7 @@ class IsaFlexEnv:
         isa_steps = [f"using {premise}" for premise in corrected_premise_names]
         successful_steps: List[str] = []
         for step in isa_steps:
+            breakpoint()
 
             next_proof_state, _, done, _ = self.step_to_top_level_state(
                 step,
