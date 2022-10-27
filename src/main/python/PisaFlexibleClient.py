@@ -164,7 +164,6 @@ class IsaFlexEnv:
 
         """
         corrected_premise_names: List[str] = []
-        non_suspect_premises: List[str] = []
 
         for premise in premise_names:
 
@@ -176,10 +175,11 @@ class IsaFlexEnv:
                 corrected_premise_names.append(premise_alternative)
                 corrected_premise_names.append(premise)
             else:
-                non_suspect_premises.append(premise)
+                corrected_premise_names.append(premise)
 
         isa_steps = [f"using {premise}" for premise in corrected_premise_names]
         successful_steps: List[str] = []
+        unsuccessful_steps: List[str] = []
         for step in isa_steps:
             breakpoint()
 
@@ -193,11 +193,13 @@ class IsaFlexEnv:
             step_correct = "Step error: Undefined fact" not in next_proof_state_clean
             if step_correct:
                 successful_steps.append(step)
+            else:
+                unsuccessful_steps.append(step)
+
 
         translated_premises = [step.split()[-1] for step in successful_steps]
-        sus_and_nonsus_premises = translated_premises + non_suspect_premises
-
-        return sus_and_nonsus_premises
+        breakpoint()
+        return translated_premises
 
     @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
