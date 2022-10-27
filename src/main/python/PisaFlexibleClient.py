@@ -182,6 +182,7 @@ class IsaFlexEnv:
         successful_steps: List[str] = []
         for step in isa_steps:
             breakpoint()
+
             next_proof_state, _, done, _ = self.step_to_top_level_state(
                 step,
                 isabelle_state.proof_state_id,
