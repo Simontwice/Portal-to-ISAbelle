@@ -57,7 +57,7 @@ class IsabelleServerTmuxConnection:
         self.send_command_to_tmux("C-c", self.port_to_session(port))
 
     def clean_tmux_output(self,port):
-        self.send_command_to_tmux("C-l", self.port_to_session(port))
+        self.send_command_to_tmux("tmux clear-history", self.port_to_session(port))
 
     def restart_isabelle_server(self, port):
         self.stop_isabelle_server(port)
