@@ -32,11 +32,12 @@ class IsabelleServerTmuxConnection:
         return subprocess.run(script, shell=True, capture_output=True)
 
     def read_tmux(self, port):
-        return subprocess.run(
+        message = subprocess.run(
             f"tmux capture-pane -t {self.port_to_session(port)}; tmux show-buffer; tmux delete-buffer",
             shell=True,
             capture_output=True,
         ).stdout.decode("utf-8")
+        return message
 
     def check_is_running(self, port, report=False):
         out = self.read_tmux(port)
@@ -80,7 +81,8 @@ class IsabelleServerTmuxConnection:
         except:
             #hard reset, by close + start
             self.close_isabelle_server(port)
-            self.start_isabelle_server(port)
+            _ = self.start_isabelle_server(port)
+        return True
 
 
 
@@ -132,6 +134,7 @@ class IsabelleServerTmuxConnection:
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
+        return True
 
     def close_isabelle_server(self, port):
         if port not in self.used_ports:

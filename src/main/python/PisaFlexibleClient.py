@@ -163,40 +163,42 @@ class IsaFlexEnv:
             It is possible that both _{n} and (n) are returned for some names.
 
         """
-        corrected_premise_names: List[str] = []
-        non_suspect_premises: List[str] = []
+        successful_steps: List[str] = []
+        unsuccessful_premises: List[str] = []
 
         for premise in premise_names:
-
+            possible_premise_names = []
             suffix = premise.split("_")[-1]
             prefix = premise.rsplit("_", 1)[0]
 
             if suffix.isdigit():
                 premise_alternative = f"{prefix}({suffix})"
-                corrected_premise_names.append(premise_alternative)
-                corrected_premise_names.append(premise)
+                possible_premise_names.append(premise_alternative)
+                possible_premise_names.append(premise)
             else:
-                non_suspect_premises.append(premise)
+                possible_premise_names.append(premise)
 
-        isa_steps = [f"using {premise}" for premise in corrected_premise_names]
-        successful_steps: List[str] = []
-        for step in isa_steps:
-            breakpoint()
-            next_proof_state, _, done, _ = self.step_to_top_level_state(
-                step,
-                isabelle_state.proof_state_id,
-                -1,
-            )
+            isa_steps = [f"using {premise}" for premise in possible_premise_names]
+            step_successful = False
 
-            next_proof_state_clean = trim_string_optional(next_proof_state)
-            step_correct = "Step error: Undefined fact" not in next_proof_state_clean
-            if step_correct:
-                successful_steps.append(step)
+            for step in isa_steps:
+                next_proof_state, _, done, _ = self.step_to_top_level_state(
+                    step,
+                    isabelle_state.proof_state_id,
+                    -1,
+                )
+
+                next_proof_state_clean = trim_string_optional(next_proof_state)
+                step_correct = "Step error: Undefined fact" not in next_proof_state_clean
+                if step_correct:
+                    successful_steps.append(step)
+                    step_successful = True
+            if not step_successful:
+                unsuccessful_premises.append(premise)
+
 
         translated_premises = [step.split()[-1] for step in successful_steps]
-        sus_and_nonsus_premises = translated_premises + non_suspect_premises
-
-        return sus_and_nonsus_premises
+        return translated_premises, unsuccessful_premises
 
     @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
