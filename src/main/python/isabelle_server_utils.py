@@ -37,11 +37,7 @@ class IsabelleServerTmuxConnection:
             shell=True,
             capture_output=True,
         ).stdout.decode("utf-8")
-
-        self.clean_tmux_output(port)
         return message
-
-
 
     def check_is_running(self, port, report=False):
         out = self.read_tmux(port)
@@ -55,9 +51,6 @@ class IsabelleServerTmuxConnection:
 
     def stop_isabelle_server(self, port):
         self.send_command_to_tmux("C-c", self.port_to_session(port))
-
-    def clean_tmux_output(self,port):
-        self.send_command_to_tmux("tmux clear-history", self.port_to_session(port))
 
     def restart_isabelle_server(self, port):
         self.stop_isabelle_server(port)
@@ -88,7 +81,8 @@ class IsabelleServerTmuxConnection:
         except:
             #hard reset, by close + start
             self.close_isabelle_server(port)
-            self.start_isabelle_server(port)
+            _ = self.start_isabelle_server(port)
+        return True
 
 
 
@@ -140,6 +134,7 @@ class IsabelleServerTmuxConnection:
             print(
                 f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
+        return True
 
     def close_isabelle_server(self, port):
         if port not in self.used_ports:
