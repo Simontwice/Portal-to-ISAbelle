@@ -84,6 +84,11 @@ class IsabelleServerTmuxConnection:
             _ = self.start_isabelle_server(port)
         return True
 
+    def hard_restart_isabelle_server(self,port):
+        self.close_isabelle_server(port)
+        _ = self.start_isabelle_server(port)
+        return True
+
 
 
     def restart_many_servers(self, ports, stop_previous=True):
