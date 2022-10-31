@@ -143,7 +143,6 @@ class IsabelleServerTmuxConnection:
         return True
 
     def close_isabelle_server(self, port):
-        breakpoint()
         if port not in self.used_ports:
             print(f"Skip, no running session on port {port}.")
             raise NotImplementedError
