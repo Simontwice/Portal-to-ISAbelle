@@ -1,3 +1,4 @@
+import os
 import subprocess
 from time import sleep
 import pathlib
@@ -142,7 +143,18 @@ class IsabelleServerTmuxConnection:
             )
         return True
 
+    def clean_external_prover_memory_footprint(self):
+        os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+        os.system(
+            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
+        )
+        os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
+
     def close_isabelle_server(self, port):
+        self.clean_external_prover_memory_footprint()
         if port not in self.used_ports:
             print(f"Skip, no running session on port {port}.")
             raise NotImplementedError
