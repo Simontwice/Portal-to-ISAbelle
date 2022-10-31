@@ -134,6 +134,7 @@ class IsabelleServerTmuxConnection:
                     break
                 sleep(1)
             assert self.check_is_running(port,report=True)
+            self.used_ports.add(port)
             sleep(5)
 
             print(
@@ -145,5 +146,6 @@ class IsabelleServerTmuxConnection:
         breakpoint()
         if port not in self.used_ports:
             print(f"Skip, no running session on port {port}.")
+            raise NotImplementedError
         else:
             self.kill_local_tmux_session(self.port_to_session(port))
