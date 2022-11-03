@@ -134,7 +134,15 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
-            assert self.check_is_running(port,report=True)
+
+            is_running = self.check_is_running(port,report=True)
+            i=0
+            while not is_running and i<100:
+                is_running = self.check_is_running(port,report=True)
+                i+=1
+                sleep(5)
+            if i==100:
+                raise AssertionError
             self.used_ports.add(port)
             sleep(5)
 
