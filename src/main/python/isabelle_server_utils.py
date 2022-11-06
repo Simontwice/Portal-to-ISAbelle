@@ -161,8 +161,16 @@ class IsabelleServerTmuxConnection:
         os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
 
-    def close_isabelle_server(self, port):
+
+    def full_clean_isabelle_footprint(self):
         self.clean_external_prover_memory_footprint()
+        os.system("ps -ef | grep scala | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9")
+
+    def close_isabelle_server(self, port):
+        self.full_clean_isabelle_footprint()
         if port not in self.used_ports:
             print(f"Skip, no running session on port {port}.")
             raise NotImplementedError
