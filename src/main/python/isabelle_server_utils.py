@@ -160,6 +160,7 @@ class IsabelleServerTmuxConnection:
         )
         os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
+        sleep(5)
 
 
     def full_clean_isabelle_footprint(self):
