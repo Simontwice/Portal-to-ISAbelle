@@ -170,7 +170,7 @@ class IsabelleServerTmuxConnection:
         os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9")
 
     def close_isabelle_server(self, port):
-        self.full_clean_isabelle_footprint()
+        self.clean_external_prover_memory_footprint()
         if port not in self.used_ports:
             print(f"Skip, no running session on port {port}.")
             raise NotImplementedError
