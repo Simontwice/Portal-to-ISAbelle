@@ -79,7 +79,7 @@ class IsabelleServerTmuxConnection:
             print(
                 f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
-        except:
+        except AssertionError:
             #hard reset, by close + start
             self.close_isabelle_server(port)
             _ = self.start_isabelle_server(port)
