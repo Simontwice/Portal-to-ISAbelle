@@ -145,7 +145,6 @@ class IsabelleServerTmuxConnection:
                 raise AssertionError
             self.used_ports.add(port)
             sleep(5)
-            os.system("rm -rf ~/interactive_isabelle/pisa/target/bg-jobs")
         return True
 
     def clean_external_prover_memory_footprint(self):
@@ -171,6 +170,7 @@ class IsabelleServerTmuxConnection:
 
     def close_isabelle_server(self, port):
         self.clean_external_prover_memory_footprint()
+        os.system("rm -rf ~/interactive_isabelle/pisa/target/bg-jobs")
         if port in self.used_ports:
             self.used_ports.remove(port)
         self.kill_local_tmux_session(self.port_to_session(port))
