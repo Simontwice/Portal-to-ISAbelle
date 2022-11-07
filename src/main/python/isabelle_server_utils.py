@@ -47,7 +47,7 @@ class IsabelleServerTmuxConnection:
 
     def check_sbt_compilation(self, port):
         out = self.read_tmux(port)
-        return "[success]" in out[-100:]
+        return "[success]" in out[-200:]
 
     def stop_isabelle_server(self, port):
         self.send_command_to_tmux("C-c", self.port_to_session(port))
