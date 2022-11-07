@@ -171,8 +171,6 @@ class IsabelleServerTmuxConnection:
 
     def close_isabelle_server(self, port):
         self.clean_external_prover_memory_footprint()
-        if port not in self.used_ports:
-            print(f"Skip, no running session on port {port}.")
-            raise NotImplementedError
-        else:
-            self.kill_local_tmux_session(self.port_to_session(port))
+        if port in self.used_ports:
+            self.used_ports.remove(port)
+        self.kill_local_tmux_session(self.port_to_session(port))
