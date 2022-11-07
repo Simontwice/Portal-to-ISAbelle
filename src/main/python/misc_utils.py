@@ -1,5 +1,8 @@
 from typing import Optional
 
+from pisa.src.main.python.PisaFlexibleClient import AvailableFactsExtractionError
+
+
 def trim_string_optional(input_string: Optional[str]) -> Optional[str]:
     if input_string is None:
         return None
