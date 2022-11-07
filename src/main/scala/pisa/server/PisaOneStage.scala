@@ -66,6 +66,8 @@ class OneStageBody extends ZServer[ZEnv, Any] {
 
   def deal_with_extraction_with_hammer(): String = pisaos.step("PISA extract data with hammer")
 
+  def deal_with_extraction_of_steps(): String = pisaos.step("PISA extract actions")
+
   def deal_with_list_states(): String = pisaos.top_level_state_map.keys.mkString(" | ")
 
   def deal_with_initialise(): String = {
@@ -258,6 +260,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       val proof_state: String = {
         if (isa_command.command.trim == "PISA extract data") deal_with_extraction()
         else if (isa_command.command.trim == "PISA extract data with hammer") deal_with_extraction_with_hammer()
+        else if (isa_command.commmand.trim == "<extract actions>") deal_with_extraction_of_steps()
         else if (isa_command.command.startsWith("<accumulative step before>")) {
           val text = isa_command.command.stripPrefix("<accumulative step before>")
           deal_with_accummulative_step_before(text)
