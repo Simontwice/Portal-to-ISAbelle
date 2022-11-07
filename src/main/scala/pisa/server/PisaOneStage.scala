@@ -260,7 +260,6 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       val proof_state: String = {
         if (isa_command.command.trim == "PISA extract data") deal_with_extraction()
         else if (isa_command.command.trim == "PISA extract data with hammer") deal_with_extraction_with_hammer()
-        else if (isa_command.command.trim == "<extract actions>") deal_with_extraction_of_steps()
         else if (isa_command.command.startsWith("<accumulative step before>")) {
           val text = isa_command.command.stripPrefix("<accumulative step before>")
           deal_with_accummulative_step_before(text)
@@ -344,6 +343,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
         }
 
         else if (isa_command.command == "exit") deal_with_exit(isa_command.command)
+        else if (isa_command.command == "PISA extract actions") pisaos.step(isa_command.command)
         else "Unrecognised operation."
       }
       ZIO.succeed(IsaState(proof_state))
