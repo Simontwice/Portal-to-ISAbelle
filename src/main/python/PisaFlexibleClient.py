@@ -123,6 +123,9 @@ class IsaFlexEnv:
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
 
+    def get_proof_level(self):
+        return self.post("<get_proof_level>")
+
     def proceed_to_line(self, line_stirng, before_after):
         assert before_after in ["before", "after"]
         try:

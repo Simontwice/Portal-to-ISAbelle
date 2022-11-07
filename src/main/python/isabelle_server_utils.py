@@ -17,6 +17,8 @@ class IsabelleServerTmuxConnection:
         self.num_trials = 180
         self.compile_pisa = compile_pisa
 
+
+
     def port_to_session(self, port):
         return f"isa_server_{port}"
 
@@ -54,7 +56,7 @@ class IsabelleServerTmuxConnection:
         self.send_command_to_tmux("C-c", self.port_to_session(port))
 
     def restart_isabelle_server(self, port):
-        self.stop_isabelle_server(port)
+        self.close_isabelle_server(port)
         stop_string = "[error] Use 'last' for the full log"
         sleep(1)
         for _ in range(5):
@@ -81,15 +83,13 @@ class IsabelleServerTmuxConnection:
             )
         except AssertionError:
             #hard reset, by close + start
-            self.close_isabelle_server(port)
-            _ = self.start_isabelle_server(port)
+            self.hard_restart_isabelle_server(port)
         return True
 
     def hard_restart_isabelle_server(self,port):
         self.close_isabelle_server(port)
         _ = self.start_isabelle_server(port)
         return True
-
 
 
     def restart_many_servers(self, ports, stop_previous=True):
@@ -145,10 +145,7 @@ class IsabelleServerTmuxConnection:
                 raise AssertionError
             self.used_ports.add(port)
             sleep(5)
-
-            print(
-                f"Isabelle server in tmux. To access: tmux attach-session -t {self.port_to_session(port)}"
-            )
+            os.system("rm -rf ~/interactive_isabelle/pisa/target/bg-jobs")
         return True
 
     def clean_external_prover_memory_footprint(self):
@@ -169,6 +166,8 @@ class IsabelleServerTmuxConnection:
         os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9")
+
+
 
     def close_isabelle_server(self, port):
         self.clean_external_prover_memory_footprint()
