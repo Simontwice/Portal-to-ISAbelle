@@ -255,6 +255,13 @@ class OneStageBody extends ZServer[ZEnv, Any] {
     pisaos.accumulative_step_to_before_transition_starting(text)
   }
 
+  def deal_with_thm_deps(tls_name: String, thm_name: String): String = {
+    if (pisaos.top_level_state_map.contains(tls_name)) {
+      val dep_thm_list = pisaos.get_dependent_theorems(tls_name, thm_name)
+      dep_thm_list.mkString("<SEP>")
+    } else s"Didn't find top level state of given name: ${tls_name}"
+  }
+
   def isabelleCommand(isa_command: IsaCommand): ZIO[
     zio.ZEnv, Status, IsaState] = {
       val proof_state: String = {
