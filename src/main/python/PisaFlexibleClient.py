@@ -271,8 +271,8 @@ class IsaFlexEnv:
             for step in isa_steps:
                 next_proof_state, _, done, _ = self.step_to_top_level_state(
                     step,
-                    isabelle_state.proof_state_id,
-                    -1,
+                    isabelle_state,
+                    "-1",
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
