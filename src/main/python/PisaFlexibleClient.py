@@ -199,7 +199,7 @@ class IsaFlexEnv:
         )
         translated_premises = {}
         for premise_name, premise_statement in unpacked_premises.items():
-            translated_name, non_translated_name = self.translate_premise_names(isabelle_state, premise_name)
+            translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
             if len(translated_name):
                 translated_name = translated_name[0]
             else:
@@ -222,7 +222,7 @@ class IsaFlexEnv:
         )
         translated_premises = {}
         for premise_name, premise_statement in unpacked_premises.items():
-            translated_name, non_translated_name = self.translate_premise_names(isabelle_state, premise_name)
+            translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
             if len(translated_name):
                 translated_name = translated_name[0]
                 translated_name = translated_name[0]
