@@ -145,8 +145,8 @@ class IsaFlexEnv:
     def clone_to_new_name(self, new_name):
         return self.post(f"<clone> default <clone> {new_name}", forceTimeout=10)
 
-    def get_proof_level(self,tls_name):
-        return self.post("<get_proof_level>")
+    def get_proof_level(self,tls_name="default"):
+        return self.post(f"<get_proof_level> {tls_name}")
 
     @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
