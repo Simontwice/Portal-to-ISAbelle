@@ -214,7 +214,7 @@ class IsaFlexEnv:
         :return:
         """
         _local = self.local_facts(tls_name=isabelle_state)
-        breakpoint()
+        # breakpoint()
         unpacked_premises = process_raw_facts(_local)
         unpacked_premises = dict(
             filter(lambda item: not item[0].startswith("??"), unpacked_premises.items())
