@@ -145,6 +145,9 @@ class IsaFlexEnv:
     def clone_to_new_name(self, new_name):
         return self.post(f"<clone> default <clone> {new_name}", forceTimeout=10)
 
+    def get_proof_level(self,tls_name):
+        return self.post("<get_proof_level>")
+
     @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
@@ -213,6 +216,7 @@ class IsaFlexEnv:
         for premise_name, premise_statement in unpacked_premises.items():
             translated_name, non_translated_name = self.translate_premise_names(isabelle_state, premise_name)
             if len(translated_name):
+                translated_name = translated_name[0]
                 translated_name = translated_name[0]
             else:
                 translated_name = non_translated_name[0]
