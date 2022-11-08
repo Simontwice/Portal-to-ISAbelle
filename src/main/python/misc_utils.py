@@ -8,7 +8,6 @@ def trim_string_optional(input_string: Optional[str]) -> Optional[str]:
     return " ".join(input_string.replace("\n", " ").split()).strip()
 
 def process_raw_facts(raw_string):
-    # TODO: handle multiple facts with same name
     if raw_string == "":
         return {}
     if (
@@ -25,7 +24,6 @@ def process_raw_facts(raw_string):
     return global_fact_dict
 
 def process_raw_global_facts(raw_string):
-    # TODO: handle multiple facts with same name
     if raw_string == "":
         return {}
     if (

@@ -203,6 +203,7 @@ class IsaFlexEnv:
             if len(translated_name):
                 translated_name = translated_name[0]
             else:
+                breakpoint()
                 translated_name = non_translated_name[0]
             translated_premises[translated_name] = premise_statement
         return translated_premises
