@@ -251,6 +251,20 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val tls = retrieve_tls(tls_name)
     total_facts_and_defs_string(tls)
   }
+  println("Checkpoint 3_5")
+    val get_dependent_thms: MLFunction2[ToplevelState, String, List[String]] = compileFunction[ToplevelState, String, List[String]](
+        """fn (tls, name) =>
+                | let val thy = Toplevel.theory_of tls;
+                      |     val thm = Global_Theory.get_thms thy name;
+                            | in
+                                  |     map (fn x => (#1 (#2 x))) (Thm_Deps.thm_deps thy thm)
+                                        | end""".stripMargin
+                                          )
+    def get_dependent_theorems(tls_name: String, theorem_name: String): List[String] = {
+          val toplevel_state = retrieve_tls(tls_name)
+          get_dependent_thms(toplevel_state, theorem_name).force.retrieveNow
+        }
+
   println("Checkpoint 4")
   val header_read: MLFunction2[String, Position, TheoryHeader] =
     compileFunction[String, Position, TheoryHeader]("fn (text,pos) => Thy_Header.read pos text")
@@ -420,8 +434,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def getFacts(stateString: String): String = {
     var facts: String = ""
     if (stateString.trim.nonEmpty) {
-      // Limit the maximum number of local facts to be 5
-      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(5)) {
+      // Limit the maximum number of local facts to be 500
+      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(500)) {
         facts = facts + fact + "<\\PISASEP>"
       }
     }

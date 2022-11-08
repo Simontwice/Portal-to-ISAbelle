@@ -260,6 +260,11 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       val proof_state: String = {
         if (isa_command.command.trim == "PISA extract data") deal_with_extraction()
         else if (isa_command.command.trim == "PISA extract data with hammer") deal_with_extraction_with_hammer()
+        else if (isa_command.command.trim.startsWith("<get_thm_deps>")) {
+          val tls_name: String = "default"
+          val thm_name: String = isa_command.command.trim.stripPrefix("<get_thm_deps>").trim
+          deal_with_thm_deps(tls_name, thm_name)
+      }
         else if (isa_command.command.startsWith("<accumulative step before>")) {
           val text = isa_command.command.stripPrefix("<accumulative step before>")
           deal_with_accummulative_step_before(text)
