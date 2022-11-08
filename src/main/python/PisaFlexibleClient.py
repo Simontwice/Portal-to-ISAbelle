@@ -167,6 +167,12 @@ class IsaFlexEnv:
             print(e)
             raise ProceedToLineFailedException
 
+    def dependent_theorems(self, theorem_name):
+        theorems = self.stub.IsabelleCommand(
+            server_pb2.IsaCommand(command=f"<get_thm_deps> {theorem_name}")
+        ).state
+        return theorems.split("<SEP>")
+
     def local_facts(self, tls_name="default"):
         try:
             return self.post(f"<local facts and defs> {tls_name}")
