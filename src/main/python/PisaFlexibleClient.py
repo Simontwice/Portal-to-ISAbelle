@@ -1,10 +1,12 @@
 from __future__ import print_function
 
 import os
+from collections import defaultdict
+
 import grpc
 
 from func_timeout import func_set_timeout, FunctionTimedOut
-from typing import List
+from typing import List, Dict
 
 from pisa.src.main.python import server_pb2, server_pb2_grpc
 from pathlib import Path
@@ -167,6 +169,42 @@ class IsaFlexEnv:
         )
 
         return processed_global
+
+    def translate_premise_names_for_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
+        premise_id_to_names_translated: Dict[int, List[str]] = defaultdict(list)
+        unsuccessful_premises_ids: List[int] = []
+
+        for premise_id, premise in premise_id_to_name.items():
+            possible_premise_names = []
+            suffix = premise.split("_")[-1]
+            prefix = premise.rsplit("_", 1)[0]
+
+            if suffix.isdigit():
+                premise_alternative = f"{prefix}({suffix})"
+                possible_premise_names.append(premise_alternative)
+                possible_premise_names.append(premise)
+            else:
+                possible_premise_names.append(premise)
+
+            isa_steps = [f"using {premise}" for premise in possible_premise_names]
+            step_successful = False
+
+            for step in isa_steps:
+                next_proof_state, _, done, _ = self.step_to_top_level_state(
+                    step,
+                    isabelle_state.proof_state_id,
+                    -1,
+                )
+
+                next_proof_state_clean = trim_string_optional(next_proof_state)
+                step_correct = "Step error: Undefined fact" not in next_proof_state_clean
+                if step_correct:
+                    premise_id_to_names_translated[premise_id].append(step.split()[-1])
+                    step_successful = True
+            if not step_successful:
+                unsuccessful_premises_ids.append(premise_id)
+
+        return premise_id_to_names_translated, unsuccessful_premises_ids
 
     def translate_premise_names(self, isabelle_state, premise_names: List[str]):
         """
