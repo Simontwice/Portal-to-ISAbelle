@@ -142,8 +142,8 @@ class IsaFlexEnv:
     def proceed_after(self, line_string):
         return self.post(f"<proceed after> {line_string}", forceTimeout=10000)
 
-    def clone_to_new_name(self, new_name):
-        return self.post(f"<clone> default <clone> {new_name}", forceTimeout=10)
+    def clone_to_new_name(self, old_name, new_name):
+        return self.post(f"<clone> {old_name} <clone> {new_name}", forceTimeout=10)
 
     def get_proof_level(self,tls_name="default"):
         return self.post(f"<get_proof_level> {tls_name}")
