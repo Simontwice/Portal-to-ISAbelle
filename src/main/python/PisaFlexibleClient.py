@@ -219,7 +219,6 @@ class IsaFlexEnv:
         :return:
         """
         _local = self.local_facts(tls_name=isabelle_state)
-        breakpoint()
         unpacked_premises = process_raw_facts(_local)
         unpacked_premises = dict(
             filter(lambda item: not item[0].startswith("??"), unpacked_premises.items())
@@ -228,7 +227,6 @@ class IsaFlexEnv:
         for premise_name, premise_statement in unpacked_premises.items():
             translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
             if len(translated_name):
-                translated_name = translated_name[0]
                 translated_name = translated_name[0]
             else:
                 translated_name = non_translated_name[0]
