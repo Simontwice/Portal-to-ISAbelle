@@ -197,6 +197,9 @@ class IsaFlexEnv:
         unpacked_premises = dict(
             filter(lambda item: not item[0].startswith("??"), unpacked_premises.items())
         )
+        unpacked_premises = dict(
+            filter(lambda item: "assms" not in item[0], unpacked_premises.items())
+        )
         translated_premises = {}
         for premise_name, premise_statement in unpacked_premises.items():
             translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
