@@ -170,7 +170,7 @@ class IsaFlexEnv:
 
         return processed_global
 
-    def translate_premise_names_for_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
+    def translate_premise_names_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
         premise_id_to_names_translated: Dict[int, List[str]] = defaultdict(list)
         unsuccessful_premises_ids: List[int] = []
 
