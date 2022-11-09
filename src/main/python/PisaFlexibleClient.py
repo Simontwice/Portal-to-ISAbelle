@@ -11,7 +11,7 @@ from pathlib import Path
 from pisa.src.main.python.misc_utils import (
     trim_string_optional,
     process_raw_global_facts,
-    process_raw_facts,
+    process_raw_facts, is_sus,
 )
 
 MAX_MESSAGE_LENGTH = 100485760
@@ -202,13 +202,14 @@ class IsaFlexEnv:
         )
         translated_premises = {}
         for premise_name, premise_statement in unpacked_premises.items():
-            translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
-            if len(translated_name):
-                translated_name = translated_name[0]
-            else:
-                breakpoint()
-                translated_name = non_translated_name[0]
-            translated_premises[translated_name] = premise_statement
+            correct_name = premise_name
+            if is_sus(premise_name):
+                translated_name, non_translated_name = self.translate_premise_names(isabelle_state, [premise_name])
+                if len(translated_name):
+                    correct_name = translated_name[0]
+                else:
+                    continue
+            translated_premises[correct_name] = premise_statement
         return translated_premises
 
     def dataset_extraction_local_facts(self, isabelle_state):
