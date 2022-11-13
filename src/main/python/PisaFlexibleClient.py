@@ -123,6 +123,9 @@ class IsaFlexEnv:
 
         return obs_string, self.reward(done), done, {}
 
+    def delete_state(self, tls_name):
+        self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<delete> {tls_name}"))
+
     def proceed_after(self, line_string):
         return self.post(f"<proceed after> {line_string}", forceTimeout=10000)
 
