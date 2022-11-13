@@ -197,7 +197,14 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = "Step error: Undefined fact" not in next_proof_state_clean
+                step_correct = True
+                for prefix_error in [
+                    "Step error: Undefined fact", "Step error: Bad fact"
+                ]:
+                    if prefix_error in next_proof_state_clean:
+                        step_correct = False
+                        break
+
                 if step_correct:
                     pisa_name = step.split()[-1]
                     premise_name_to_pisa_names[premise].append(pisa_name)
@@ -235,7 +242,14 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = "Step error: Undefined fact" not in next_proof_state_clean
+                step_correct = True
+                for prefix_error in [
+                    "Step error: Undefined fact", "Step error: Bad fact"
+                ]:
+                    if prefix_error in next_proof_state_clean:
+                        step_correct = False
+                        break
+
                 if step_correct:
                     premise_id_to_names_translated[premise_id].append(step.split()[-1])
                     step_successful = True
@@ -281,7 +295,14 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = "Step error: Undefined fact" not in next_proof_state_clean
+                step_correct = True
+                for prefix_error in [
+                    "Step error: Undefined fact", "Step error: Bad fact"
+                ]:
+                    if prefix_error in next_proof_state_clean:
+                        step_correct = False
+                        break
+
                 if step_correct:
                     successful_steps.append(step)
                     step_successful = True
