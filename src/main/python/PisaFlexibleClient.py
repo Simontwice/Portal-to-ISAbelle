@@ -118,7 +118,7 @@ class IsaFlexEnv:
                 for error_keyword in ("Step error", "Unknown error"):
                     if error_keyword in obs_string:
                         self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<delete> {new_name}"))
-                        logging.info(f"Deleted new_state with name: {new_name}")
+                        # logging.info(f"[PISA] Deleted new_state with name: {new_name}")
                         break
 
         return obs_string, self.reward(done), done, {}
