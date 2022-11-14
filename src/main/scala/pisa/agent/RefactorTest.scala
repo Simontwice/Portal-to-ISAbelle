@@ -48,6 +48,6 @@ object RefactorTest {
         }
       }
     }
-    println(pisaos.total_facts_and_defs_string(pisaos.toplevel))
+//    println(pisaos.total_facts_and_defs_string(pisaos.toplevel))
   }
 }
