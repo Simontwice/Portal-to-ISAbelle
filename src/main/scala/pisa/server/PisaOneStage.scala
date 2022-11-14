@@ -119,7 +119,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       var actual_timeout = 10000
       val old_state: ToplevelState = pisaos.retrieve_tls(toplevel_state_name)
       var actual_step: String = "Gibberish"
-      println("Got action: " + action)
+      println("[deal_with_apply_to_tls] action: " + action)
 
       if (action == GAP_STEP) {
         // If found a sledgehammer step, execute it differently
@@ -204,45 +204,44 @@ class OneStageBody extends ZServer[ZEnv, Any] {
     } else s"Didn't find top level state of given name: ${toplevel_state_name}"
   }
 
-  def deal_with_local_facts_and_defs(toplevel_state_name: String): String = {
-    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
-      pisaos.local_facts_and_defs_string(toplevel_state_name)
-    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
-  }
+//  def deal_with_local_facts_and_defs(toplevel_state_name: String): String = {
+//    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
+//      pisaos.local_facts_and_defs_string(toplevel_state_name)
+//    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
+//  }
 
-  def deal_with_global_facts_and_defs(toplevel_state_name: String): String = {
-    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
-      pisaos.global_facts_and_defs_string(toplevel_state_name)
-    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
-  }
+//  def deal_with_global_facts_and_defs(toplevel_state_name: String): String = {
+//    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
+//      pisaos.global_facts_and_defs_string(toplevel_state_name)
+//    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
+//  }
 
-  def deal_with_total_facts_and_defs(toplevel_state_name: String): String = {
-    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
-      pisaos.total_facts_and_defs_string(toplevel_state_name)
-    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
-  }
+//  def deal_with_total_facts_and_defs(toplevel_state_name: String): String = {
+//    if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
+//      pisaos.total_facts_and_defs_string(toplevel_state_name)
+//    } else s"Didn't find top level state of given name: ${toplevel_state_name}"
+//  }
 
-  def deal_with_get_all_defs(theorem_string: String): String = {
-    val tls_name = "default"
-    pisaos.get_all_definitions(tls_name, theorem_string).mkString("\n")
-  }
-
-  def deal_with_global_facts_from_file: String = {
-    implicit val isabelle: Isabelle = pisaos.isabelle
-    implicit val ec: ExecutionContext = pisaos.ec
-    val continue = new Breaks
-    val transition_and_index_list = pisaos.parse_text(pisaos.thy1, pisaos.fileContentCopy.trim).force.retrieveNow.zipWithIndex
-    for (((transition, text), i) <- transition_and_index_list) {
-      continue.breakable {
-        if (text.trim.isEmpty) continue.break
-        else if (text.trim=="end" && (i==transition_and_index_list.length-1)) continue.break
-        else {
-          pisaos.singleTransition(transition)
-        }
-      }
-    }
-    pisaos.global_facts_and_defs_string(pisaos.toplevel)
-  }
+//  def deal_with_get_all_defs(theorem_string: String): String = {
+//    val tls_name = "default"
+//    pisaos.get_all_definitions(tls_name, theorem_string).mkString("\n")
+//  }
+//def deal_with_global_facts_from_file: String = {
+//    implicit val isabelle: Isabelle = pisaos.isabelle
+//    implicit val ec: ExecutionContext = pisaos.ec
+//    val continue = new Breaks
+//    val transition_and_index_list = pisaos.parse_text(pisaos.thy1, pisaos.fileContentCopy.trim).force.retrieveNow.zipWithIndex
+//    for (((transition, text), i) <- transition_and_index_list) {
+//      continue.breakable {
+//        if (text.trim.isEmpty) continue.break
+//        else if (text.trim=="end" && (i==transition_and_index_list.length-1)) continue.break
+//        else {
+//          pisaos.singleTransition(transition)
+//        }
+//      }
+//    }
+//    pisaos.global_facts_and_defs_string(pisaos.toplevel)
+//  }
 
   def deal_with_parse_text(text: String): String = {
     implicit val isabelle: Isabelle = pisaos.isabelle
@@ -268,25 +267,25 @@ class OneStageBody extends ZServer[ZEnv, Any] {
           val text = isa_command.command.trim.stripPrefix("<parse text>")
           deal_with_parse_text(text)
         }
-        else if (isa_command.command.trim.startsWith("<get all definitions>")) {
-          val theorem_string: String = isa_command.command.stripPrefix("<get all definitions>").trim
-          deal_with_get_all_defs(theorem_string)
-        }
-        else if (isa_command.command.startsWith("<local facts and defs>")) {
-          val tls_name: String = isa_command.command.stripPrefix("<local facts and defs>").trim
-          deal_with_local_facts_and_defs(tls_name)
-        }
-        else if (isa_command.command.startsWith("<global facts and defs>")) {
-          val tls_name: String = isa_command.command.stripPrefix("<global facts and defs>").trim
-          deal_with_global_facts_and_defs(tls_name)
-        }
-        else if (isa_command.command.startsWith("<total facts and defs>")) {
-          val tls_name: String = isa_command.command.stripPrefix("<total facts and defs>").trim
-          deal_with_total_facts_and_defs(tls_name)
-        }
-        else if (isa_command.command.startsWith("<get global facts from file>")) {
-          deal_with_global_facts_from_file
-        }
+//        else if (isa_command.command.trim.startsWith("<get all definitions>")) {
+//          val theorem_string: String = isa_command.command.stripPrefix("<get all definitions>").trim
+//          deal_with_get_all_defs(theorem_string)
+//        }
+//        else if (isa_command.command.startsWith("<local facts and defs>")) {
+//          val tls_name: String = isa_command.command.stripPrefix("<local facts and defs>").trim
+//          deal_with_local_facts_and_defs(tls_name)
+//        }
+//        else if (isa_command.command.startsWith("<global facts and defs>")) {
+//          val tls_name: String = isa_command.command.stripPrefix("<global facts and defs>").trim
+//          deal_with_global_facts_and_defs(tls_name)
+//        }
+//        else if (isa_command.command.startsWith("<total facts and defs>")) {
+//          val tls_name: String = isa_command.command.stripPrefix("<total facts and defs>").trim
+//          deal_with_total_facts_and_defs(tls_name)
+//        }
+//        else if (isa_command.command.startsWith("<get global facts from file>")) {
+//          deal_with_global_facts_from_file
+//        }
         else if (isa_command.command.startsWith("<list states>")) deal_with_list_states()
         else if (isa_command.command.startsWith("<initialise>")) deal_with_initialise()
         else if (isa_command.command.startsWith("<get state>")) {
@@ -305,13 +304,13 @@ class OneStageBody extends ZServer[ZEnv, Any] {
             deal_with_apply_to_tls(tls_name, action, new_name)
           } catch {
             case e: IsabelleException => {
-              println("Action: " + action)
-              println("IsabelleException: " + e.getMessage + "\n")
+              println("[isabelleCommand][exception] action: " + action)
+              println("[isabelleCommand][exception] IsabelleException: " + e.getMessage + "\n")
               "Step error: " + e.getMessage
             }
             case e: Throwable => {
-              println("Action: " + action)
-              println("Unknown error: " + e.getMessage + "\n")
+              println("[isabelleCommand][exception] action: " + action)
+              println("[isabelleCommand][exception] IsabelleException: " + e.getMessage + "\n")
               "Unknown error: " + e.getMessage
             }
           }
@@ -398,24 +397,24 @@ object PisaMini {
   }
 }
 
-object PisaExtraction {
-  val path_to_isa_bin: String = "/home/qj213/Isabelle2021"
-  val path_to_afp: String = "/home/qj213/afp-2021-10-22"
-
-  def main(args: Array[String]): Unit = {
-    val path_to_file: String = args(0)
-    val working_directory: String = args(1)
-    val dump_path: String = args(2)
-    val pisaos = new PisaOS(
-      path_to_isa_bin = path_to_isa_bin,
-      path_to_file = path_to_file,
-      working_directory = working_directory
-    )
-    new PrintWriter(dump_path) {
-      write(pisaos.parse_with_hammer);
-      close()
-    }
-  }
-}
+//object PisaExtraction {
+//  val path_to_isa_bin: String = "/home/qj213/Isabelle2021"
+//  val path_to_afp: String = "/home/qj213/afp-2021-10-22"
+//
+//  def main(args: Array[String]): Unit = {
+//    val path_to_file: String = args(0)
+//    val working_directory: String = args(1)
+//    val dump_path: String = args(2)
+//    val pisaos = new PisaOS(
+//      path_to_isa_bin = path_to_isa_bin,
+//      path_to_file = path_to_file,
+//      working_directory = working_directory
+//    )
+//    new PrintWriter(dump_path) {
+//      write(pisaos.parse_with_hammer);
+//      close()
+//    }
+//  }
+//}
 
 

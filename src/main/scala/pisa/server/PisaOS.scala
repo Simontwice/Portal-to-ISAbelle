@@ -80,10 +80,10 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   implicit val ec: ExecutionContext = ExecutionContext.global
   println("Checkpoint 4")
   // Complie useful ML functions
-  val script_thy: MLFunction2[String, Theory, Theory] = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
+//  val script_thy: MLFunction2[String, Theory, Theory] = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
   val init_toplevel: MLFunction0[ToplevelState] = compileFunction0[ToplevelState]("Toplevel.init_toplevel")
   val is_proof: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean]("Toplevel.is_proof")
-  val is_skipped_proof: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean]("Toplevel.is_skipped_proof")
+//  val is_skipped_proof: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean]("Toplevel.is_skipped_proof")
   val proof_level: MLFunction[ToplevelState, Int] = compileFunction[ToplevelState, Int]("Toplevel.level")
   val proof_of: MLFunction[ToplevelState, ProofState.T] = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
   val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
@@ -91,9 +91,9 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val command_errors: MLFunction3[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])] = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
   val toplevel_end_theory: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
-  val theory_of_state: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
-  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
-  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
+//  val theory_of_state: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
+//  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
+//  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
       |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
@@ -111,146 +111,146 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   )
   val toplevel_string_of_state: MLFunction[ToplevelState, String] = compileFunction[ToplevelState, String](
     "Toplevel.string_of_state")
-  val pretty_local_facts: MLFunction2[ToplevelState, Boolean, List[Pretty.T]] = compileFunction[ToplevelState, Boolean, List[Pretty.T]](
-    "fn (tls, b) => Proof_Context.pretty_local_facts b (Toplevel.context_of tls)"
-  )
-  val make_pretty_list_string_list: MLFunction[List[Pretty.T], List[String]] = compileFunction[List[Pretty.T], List[String]](
-    "fn (pretty_list) => map Pretty.unformatted_string_of pretty_list"
-  )
+//  val pretty_local_facts: MLFunction2[ToplevelState, Boolean, List[Pretty.T]] = compileFunction[ToplevelState, Boolean, List[Pretty.T]](
+//    "fn (tls, b) => Proof_Context.pretty_local_facts b (Toplevel.context_of tls)"
+//  )
+//  val make_pretty_list_string_list: MLFunction[List[Pretty.T], List[String]] = compileFunction[List[Pretty.T], List[String]](
+//    "fn (pretty_list) => map Pretty.unformatted_string_of pretty_list"
+//  )
 
-  val local_facts_and_defs: MLFunction[ToplevelState, List[(String, String)]] =
-    compileFunction[ToplevelState, List[(String, String)]](
-    """fn tls =>
-      |  let val ctxt = Toplevel.context_of tls;
-      |      val facts = Proof_Context.facts_of ctxt;
-      |      val props = map #1 (Facts.props facts);
-      |      val local_facts =
-      |        (if null props then [] else [("unnamed", props)]) @
-      |        Facts.dest_static true [Global_Theory.facts_of (Proof_Context.theory_of ctxt)] facts;
-      |      val thms = (
-      |           if null local_facts then []
-      |           else
-      |           (map (fn e => #2 (#2 e)) (sort_by (#1 o #2) (map (`(Proof_Context.pretty_fact ctxt)) local_facts))));
-      |      val condensed_thms = fold (fn x => fn y => (x @ y)) thms [];
-      |  in 
-      |      map (fn thm => (
-      |            Thm.get_name_hint thm,
-      |            Pretty.unformatted_string_of
-      |          (Element.pretty_statement ctxt "" thm)
-      |         ))
-      |         condensed_thms
-      |  end""".stripMargin
-  )
-  val global_facts_and_defs: MLFunction[ToplevelState, List[(String, String)]] =
-    compileFunction[ToplevelState, List[(String, String)]](
-      """fn tls =>
-        | map (fn tup => (#1 tup, Pretty.unformatted_string_of (Element.pretty_statement (Toplevel.context_of tls) "test" (#2 tup))))
-        | (Global_Theory.all_thms_of (Proof_Context.theory_of (Toplevel.context_of tls)) false)
-        """.stripMargin
-    )
-  val get_dependent_thms: MLFunction2[ToplevelState, String, List[String]] = compileFunction[ToplevelState, String, List[String]](
-    """fn (tls, name) =>
-      | let val thy = Toplevel.theory_of tls;
-      |     val thm = Global_Theory.get_thms thy name;
-      | in
-      |     map (fn x => (#1 (#2 x))) (Thm_Deps.thm_deps thy thm)
-      | end""".stripMargin
-  )
-  def get_dependent_theorems(tls_name: String, theorem_name: String): List[String] = {
-    val toplevel_state = retrieve_tls(tls_name)
-    get_dependent_thms(toplevel_state, theorem_name).force.retrieveNow
-  }
+//  val local_facts_and_defs: MLFunction[ToplevelState, List[(String, String)]] =
+//    compileFunction[ToplevelState, List[(String, String)]](
+//    """fn tls =>
+//      |  let val ctxt = Toplevel.context_of tls;
+//      |      val facts = Proof_Context.facts_of ctxt;
+//      |      val props = map #1 (Facts.props facts);
+//      |      val local_facts =
+//      |        (if null props then [] else [("unnamed", props)]) @
+//      |        Facts.dest_static true [Global_Theory.facts_of (Proof_Context.theory_of ctxt)] facts;
+//      |      val thms = (
+//      |           if null local_facts then []
+//      |           else
+//      |           (map (fn e => #2 (#2 e)) (sort_by (#1 o #2) (map (`(Proof_Context.pretty_fact ctxt)) local_facts))));
+//      |      val condensed_thms = fold (fn x => fn y => (x @ y)) thms [];
+//      |  in
+//      |      map (fn thm => (
+//      |            Thm.get_name_hint thm,
+//      |            Pretty.unformatted_string_of
+//      |          (Element.pretty_statement ctxt "" thm)
+//      |         ))
+//      |         condensed_thms
+//      |  end""".stripMargin
+//  )
+//  val global_facts_and_defs: MLFunction[ToplevelState, List[(String, String)]] =
+//    compileFunction[ToplevelState, List[(String, String)]](
+//      """fn tls =>
+//        | map (fn tup => (#1 tup, Pretty.unformatted_string_of (Element.pretty_statement (Toplevel.context_of tls) "test" (#2 tup))))
+//        | (Global_Theory.all_thms_of (Proof_Context.theory_of (Toplevel.context_of tls)) false)
+//        """.stripMargin
+//    )
+//  val get_dependent_thms: MLFunction2[ToplevelState, String, List[String]] = compileFunction[ToplevelState, String, List[String]](
+//    """fn (tls, name) =>
+//      | let val thy = Toplevel.theory_of tls;
+//      |     val thm = Global_Theory.get_thms thy name;
+//      | in
+//      |     map (fn x => (#1 (#2 x))) (Thm_Deps.thm_deps thy thm)
+//      | end""".stripMargin
+//  )
+//  def get_dependent_theorems(tls_name: String, theorem_name: String): List[String] = {
+//    val toplevel_state = retrieve_tls(tls_name)
+//    get_dependent_thms(toplevel_state, theorem_name).force.retrieveNow
+//  }
 
-  val get_used_consts: MLFunction2[ToplevelState, String, List[String]] = compileFunction[ToplevelState, String, List[String]](
-    """fn(tls, inner_syntax) =>
-      |let
-      |  val term_to_list = fn te =>
-      |  let
-      |     fun leaves (left $ right) = (leaves left) @ (leaves right)
-      |     |   leaves t = [t];
-      |     fun filter_out (Const ("_type_constraint_", _)) = false
-      |     | filter_out (Const _) = true
-      |     | filter_out _ = false;
-      |     val all_leaves = leaves te;
-      |     val filtered_leaves = filter filter_out all_leaves;
-      |     fun remove(_, []) = []
-      |       | remove(x, y::l) =
-      |         if x = y then
-      |           remove(x, l)
-      |         else
-      |           y::remove(x, l);
-      |      fun removeDup [] = []
-      |        | removeDup(x::l) = x::removeDup(remove(x, l));
-      |      fun string_of_term (Const (s, _)) = s
-      |        | string_of_term _ = "";
-      |  in
-      |      removeDup (map string_of_term filtered_leaves)
-      |  end;
-      |
-      |  val type_to_list = fn ty =>
-      |  let
-      |    fun type_t (Type ty) = [#1 ty] @ (flat (map type_t (#2 ty)))
-      |    | type_t (TFree _) = []
-      |    | type_t (TVar _) = [];
-      |    fun filter_out_universal_type_symbols symbol =
-      |  case symbol of
-      |    "fun" => false
-      |    | "prop" => false
-      |    | "itself" => false
-      |    | "dummy" => false
-      |    | "proof" => false
-      |    | "Pure.proof" => false
-      |    | _ => true;
-      |  in
-      |    filter filter_out_universal_type_symbols (type_t ty)
-      |  end;
-      |  val ctxt = Toplevel.context_of tls;
-      |  val flex = fn str =>
-      |   (type_to_list (Syntax.parse_typ ctxt str))
-      |   handle _ => (term_to_list (Syntax.parse_term ctxt str));
-      |in
-      |  flex inner_syntax
-      |end""".stripMargin
-  )
-  def get_all_definitions(tls_name: String, theorem_string: String): List[String] = {
-    val toplevel_state = retrieve_tls(tls_name)
-    val quotation_split : List[String] = theorem_string.split('"').toList
-    val all_inner_syntax = quotation_split.indices.collect {case i if i%2==1 => quotation_split(i)}.filter(x => x.nonEmpty).toList
-    val all_defs = all_inner_syntax.map(x => get_used_consts(toplevel_state, x).force.retrieveNow)
-    val deduplicated_all_defs: List[String] = all_defs.flatten
-    deduplicated_all_defs.distinct
-  }
+//  val get_used_consts: MLFunction2[ToplevelState, String, List[String]] = compileFunction[ToplevelState, String, List[String]](
+//    """fn(tls, inner_syntax) =>
+//      |let
+//      |  val term_to_list = fn te =>
+//      |  let
+//      |     fun leaves (left $ right) = (leaves left) @ (leaves right)
+//      |     |   leaves t = [t];
+//      |     fun filter_out (Const ("_type_constraint_", _)) = false
+//      |     | filter_out (Const _) = true
+//      |     | filter_out _ = false;
+//      |     val all_leaves = leaves te;
+//      |     val filtered_leaves = filter filter_out all_leaves;
+//      |     fun remove(_, []) = []
+//      |       | remove(x, y::l) =
+//      |         if x = y then
+//      |           remove(x, l)
+//      |         else
+//      |           y::remove(x, l);
+//      |      fun removeDup [] = []
+//      |        | removeDup(x::l) = x::removeDup(remove(x, l));
+//      |      fun string_of_term (Const (s, _)) = s
+//      |        | string_of_term _ = "";
+//      |  in
+//      |      removeDup (map string_of_term filtered_leaves)
+//      |  end;
+//      |
+//      |  val type_to_list = fn ty =>
+//      |  let
+//      |    fun type_t (Type ty) = [#1 ty] @ (flat (map type_t (#2 ty)))
+//      |    | type_t (TFree _) = []
+//      |    | type_t (TVar _) = [];
+//      |    fun filter_out_universal_type_symbols symbol =
+//      |  case symbol of
+//      |    "fun" => false
+//      |    | "prop" => false
+//      |    | "itself" => false
+//      |    | "dummy" => false
+//      |    | "proof" => false
+//      |    | "Pure.proof" => false
+//      |    | _ => true;
+//      |  in
+//      |    filter filter_out_universal_type_symbols (type_t ty)
+//      |  end;
+//      |  val ctxt = Toplevel.context_of tls;
+//      |  val flex = fn str =>
+//      |   (type_to_list (Syntax.parse_typ ctxt str))
+//      |   handle _ => (term_to_list (Syntax.parse_term ctxt str));
+//      |in
+//      |  flex inner_syntax
+//      |end""".stripMargin
+//  )
+//  def get_all_definitions(tls_name: String, theorem_string: String): List[String] = {
+//    val toplevel_state = retrieve_tls(tls_name)
+//    val quotation_split : List[String] = theorem_string.split('"').toList
+//    val all_inner_syntax = quotation_split.indices.collect {case i if i%2==1 => quotation_split(i)}.filter(x => x.nonEmpty).toList
+//    val all_defs = all_inner_syntax.map(x => get_used_consts(toplevel_state, x).force.retrieveNow)
+//    val deduplicated_all_defs: List[String] = all_defs.flatten
+//    deduplicated_all_defs.distinct
+//  }
+//
 
-
-  def local_facts_and_defs_string(tls: ToplevelState): String =
-    local_facts_and_defs(tls).force.retrieveNow.distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
-  def local_facts_and_defs_string(tls_name: String): String = {
-    val tls = retrieve_tls(tls_name)
-    try {
-        local_facts_and_defs_string(tls)
-    } catch {
-        case e: Throwable => e.toString
-    }
-  }
-  def global_facts_and_defs_string(tls: ToplevelState): String =
-    global_facts_and_defs(tls).force.retrieveNow.distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
-  def global_facts_and_defs_string(tls_name: String): String = {
-    val tls = retrieve_tls(tls_name)
-    try {
-        global_facts_and_defs_string(tls)
-    } catch {
-        case e: Throwable => e.toString
-    }
-  }
-  def total_facts_and_defs_string(tls: ToplevelState): String = {
-    val local_facts = local_facts_and_defs(tls).force.retrieveNow
-    val global_facts = global_facts_and_defs(tls).force.retrieveNow
-    (local_facts ++ global_facts).distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
-  }
-  def total_facts_and_defs_string(tls_name: String): String = {
-    val tls = retrieve_tls(tls_name)
-    total_facts_and_defs_string(tls)
-  }
+//  def local_facts_and_defs_string(tls: ToplevelState): String =
+//    local_facts_and_defs(tls).force.retrieveNow.distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
+//  def local_facts_and_defs_string(tls_name: String): String = {
+//    val tls = retrieve_tls(tls_name)
+//    try {
+//        local_facts_and_defs_string(tls)
+//    } catch {
+//        case e: Throwable => e.toString
+//    }
+//  }
+//  def global_facts_and_defs_string(tls: ToplevelState): String =
+//    global_facts_and_defs(tls).force.retrieveNow.distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
+//  def global_facts_and_defs_string(tls_name: String): String = {
+//    val tls = retrieve_tls(tls_name)
+//    try {
+//        global_facts_and_defs_string(tls)
+//    } catch {
+//        case e: Throwable => e.toString
+//    }
+//  }
+//  def total_facts_and_defs_string(tls: ToplevelState): String = {
+//    val local_facts = local_facts_and_defs(tls).force.retrieveNow
+//    val global_facts = global_facts_and_defs(tls).force.retrieveNow
+//    (local_facts ++ global_facts).distinct.map(x => x._1 + "<DEF>" + x._2).mkString("<SEP>")
+//  }
+//  def total_facts_and_defs_string(tls_name: String): String = {
+//    val tls = retrieve_tls(tls_name)
+//    total_facts_and_defs_string(tls)
+//  }
   println("Checkpoint 4")
   val header_read: MLFunction2[String, Position, TheoryHeader] =
     compileFunction[String, Position, TheoryHeader]("fn (text,pos) => Thy_Header.read pos text")
@@ -410,23 +410,23 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def reset_map(): Unit = {
     top_level_state_map = Map()
   }
+//
+//  def reset_prob(): Unit = {
+//    thy1 = beginTheory(theoryStarter)
+//    toplevel = init_toplevel().force.retrieveNow
+//    reset_map()
+//  }
 
-  def reset_prob(): Unit = {
-    thy1 = beginTheory(theoryStarter)
-    toplevel = init_toplevel().force.retrieveNow
-    reset_map()
-  }
-
-  def getFacts(stateString: String): String = {
-    var facts: String = ""
-    if (stateString.trim.nonEmpty) {
-      // Limit the maximum number of local facts to be 5
-      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(5)) {
-        facts = facts + fact + "<\\PISASEP>"
-      }
-    }
-    facts
-  }
+//  def getFacts(stateString: String): String = {
+//    var facts: String = ""
+//    if (stateString.trim.nonEmpty) {
+//      // Limit the maximum number of local facts to be 5
+//      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(5)) {
+//        facts = facts + fact + "<\\PISASEP>"
+//      }
+//    }
+//    facts
+//  }
 
   def getStateString(top_level_state: ToplevelState): String =
     toplevel_string_of_state(top_level_state).force.retrieveNow
@@ -551,7 +551,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def parse: String = parseStateAction(fileContent)
 
-  def parse_with_hammer: String = parseStateActionWithHammer(fileContent)
+//  def parse_with_hammer: String = parseStateActionWithHammer(fileContent)
 
   def step(isar_string: String, top_level_state: ToplevelState, timeout_in_millis: Int = 2000): ToplevelState = {
     // Normal isabelle business
@@ -559,7 +559,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var stateString: String = ""
     val continue = new Breaks
     val start_time = System.currentTimeMillis();
-    println("[step] start_time:" + start_time)
+    println("[step] start_time: " + start_time)
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
@@ -567,8 +567,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
-            println("[step] transition:", transition)
-            println("[step] text:", text)
+            println("[step] transition: " + transition)
+            println("[step] text: " + text)
             tls_to_return = singleTransition(transition, tls_to_return)
             // println("Applied transition successfully")
           }
@@ -582,12 +582,12 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def step(isar_string: String): String = {
     // Specific method for extracting data
-    if (isar_string == "PISA extract data")
-      return parse
+//    if (isar_string == "PISA extract data")
+//      return parse
 
     // Specific method for extracting data with hammer
-    if (isar_string == "PISA extract data with hammer")
-      return parse_with_hammer
+//    if (isar_string == "PISA extract data with hammer")
+//      return parse_with_hammer
 
     // Exit string
     if (isar_string == "exit") {
