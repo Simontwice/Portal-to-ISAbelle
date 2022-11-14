@@ -6,7 +6,6 @@ from func_timeout import FunctionTimedOut
 from pisa.src.main.python.PisaFlexibleClient import initialise_env
 from smart_open import open
 
-import metric_logging
 from data_generation_utils import (
     isa_step_to_fact_candidates,
     match_premise_and_deps,
@@ -22,9 +21,7 @@ loop_ended_thm_deps = 0
 global_facts_step = 0
 
 
-def single_file_to_data_play_szymon(
-    port, theory_file_path, out_dir, error_log_dir, metadata_log_dir, isa_path
-):
+def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, metadata_log_dir, env):
     file_relative_path, prefix = get_relative_path(theory_file_path)
     proofs_key = f"{prefix}:{file_relative_path}"
     file_processing_info = {
@@ -41,23 +38,11 @@ def single_file_to_data_play_szymon(
     wrong_thm_deps = []
 
     try:
-        env = initialise_env(port, isa_path, theory_file_path)
-        logging.info(f"initialise_env was successful, file: {theory_file_path}")
         all_steps = env.extract_theory_steps()
 
     except (Exception, FunctionTimedOut) as e:
         file_processing_info["init_failed"] = True
-        logging.info(f"did not manage to initialise_env or env.extract_theory_steps, error: {e}")
-        return file_processing_info
-
-    try:
-        _ = env.initialise_toplevel_state_map()
-
-    except (Exception, FunctionTimedOut) as e:
-        logging.info(
-            f"did not manage to obtain top level state, the command initialise_toplevel_state_map failed, error: {e}"
-        )
-        file_processing_info["post_init_failed"] = True
+        logging.info(f"did not manage to env.extract_theory_steps, error: {e}")
         return file_processing_info
 
     proof_open = False
@@ -183,12 +168,12 @@ def single_file_to_data_play_szymon(
                     logging.info(
                         f"managed theorem deps! name: {raw_statement_for_thm_deps.split(':')[0]}"
                     )
-                    metric_logging.log_scalar("thm_deps", thm_deps_step, value=1)
+                    # metric_logging.log_scalar("thm_deps", thm_deps_step, value=1)
                     if thm_deps_step % 50 == 0:
                         logging.info(f"Thm deps: {thm_deps}"[-20:])
                 except Exception as e:
                     wrong_thm_deps.append(f"{proofs_key}: {raw_statement_for_thm_deps}")
-                    metric_logging.log_scalar("thm_deps", thm_deps_step, value=0)
+                    # metric_logging.log_scalar("thm_deps", thm_deps_step, value=0)
                     thm_deps = []
                     logging.info(
                         f"my guy did not manage to extract thm_deps; {proofs_key}: {raw_statement_for_thm_deps}, error: {e}"
@@ -197,7 +182,7 @@ def single_file_to_data_play_szymon(
                 thm_deps_time = end - start
                 if thm_deps_time > 0.2:
                     logging.info(f"Thm_deps extraction attempt took: ~ {thm_deps_time} s")
-                metric_logging.log_scalar("thm_deps_time", thm_deps_step, value=thm_deps_time)
+                # metric_logging.log_scalar("thm_deps_time", thm_deps_step, value=thm_deps_time)
 
                 ################################## END OF PROOF THM DEPS TO STEP MATCHING ##############################
                 for step_num, transition in enumerate(current_proof["transitions"]):
@@ -226,11 +211,11 @@ def single_file_to_data_play_szymon(
             try:
                 global_facts = env.dataset_extraction_global_facts(isabelle_state="default")
                 global_facts_accelerated = split_over_suffixes(global_facts)
-                metric_logging.log_scalar("all_facts", global_facts_step, value=1)
+                # metric_logging.log_scalar("all_facts", global_facts_step, value=1)
                 logging.info(f"Global facts extracted!")
 
             except Exception as e:
-                metric_logging.log_scalar("all_facts", global_facts_step, value=0)
+                # metric_logging.log_scalar("all_facts", global_facts_step, value=0)
                 logging.info(
                     f"Failed to extract global facts in file {theory_file_path}, error: {e}"
                 )
@@ -239,7 +224,7 @@ def single_file_to_data_play_szymon(
 
             end = time.time()
             logging.info(f"The global facts extraction took: {end - start} seconds")
-            metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
+            # metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
 
     ########################################### PREMISES TO STATEMENTS MATCHING ########################################
     for proof in proofs:
