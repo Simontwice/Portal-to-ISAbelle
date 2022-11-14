@@ -558,6 +558,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var tls_to_return: ToplevelState = clone_tls_scala(top_level_state)
     var stateString: String = ""
     val continue = new Breaks
+    val start_time = System.currentTimeMillis();
+    println("[step] start_time:" + start_time)
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
@@ -573,6 +575,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
       }
     }
     Await.result(f_st, Duration(timeout_in_millis, "millis"))
+    println("[step] elapsed:" + (System.currentTimeMillis() - start_time))
     // println("Did step successfully")
     tls_to_return
   }
