@@ -28,9 +28,9 @@ object ExtractWithHammer {
       working_directory=working_directory
     )
 //    val hammer_extraction_string = pisaos.parse_with_hammer
-    new PrintWriter(s"data/hammer_extraction_results/$test_theorem_number.txt") {
-      write(hammer_extraction_string)
-      close()
-    }
+//    new PrintWriter(s"data/hammer_extraction_results/$test_theorem_number.txt") {
+//      write(hammer_extraction_string)
+//      close()
+//    }
   }
 }

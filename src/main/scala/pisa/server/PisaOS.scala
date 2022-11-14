@@ -433,9 +433,9 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def getStateString: String = getStateString(toplevel)
 
-  def is_done(top_level_state: ToplevelState): Boolean = {
-    getProofLevel(top_level_state) == 0
-  }
+//  def is_done(top_level_state: ToplevelState): Boolean = {
+//    getProofLevel(top_level_state) == 0
+//  }
 
   def getProofLevel(top_level_state: ToplevelState): Int =
     proof_level(top_level_state).retrieveNow
