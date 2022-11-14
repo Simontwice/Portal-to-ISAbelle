@@ -561,9 +561,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val start_time = System.currentTimeMillis();
     println("[step] start_time: " + start_time)
 
+    var thy2: Theory = beginTheory(theoryStarter)
+    println("[step] thy2.await")
+    thy2.await
+    println("[step] thy2 awaited")
+
+
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
-        for ((transition, text) <- parse_text(thy1, isar_string).force.retrieveNow)
+        for ((transition, text) <- parse_text(thy2, isar_string).force.retrieveNow)
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
