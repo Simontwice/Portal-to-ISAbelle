@@ -241,7 +241,7 @@ class IsaFlexEnv:
             if not step_successful:
                 unsuccessful_premises_names.append(premise)
 
-            return premise_name_to_pisa_names, unsuccessful_premises_names
+            return premise_name_to_pisa_names, method_name_to_premises_names_available, unsuccessful_premises_names
 
     def translate_premise_names_to_pisa_names(self, isabelle_state, premises_names: List[str]):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
