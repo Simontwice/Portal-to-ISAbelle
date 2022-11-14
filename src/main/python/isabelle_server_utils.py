@@ -53,7 +53,7 @@ class IsabelleServerTmuxConnection:
         self.send_command_to_tmux("C-c", self.port_to_session(port))
 
     def restart_isabelle_server(self, port):
-        self.stop_isabelle_server(port)
+        self.close_isabelle_server(port)
         stop_string = "[error] Use 'last' for the full log"
         sleep(1)
         for _ in range(5):
@@ -78,10 +78,14 @@ class IsabelleServerTmuxConnection:
             print(
                 f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
             )
-        except:
+        except AssertionError:
             #hard reset, by close + start
-            self.close_isabelle_server(port)
-            _ = self.start_isabelle_server(port)
+            self.hard_restart_isabelle_server(port)
+        return True
+
+    def hard_restart_isabelle_server(self,port):
+        self.close_isabelle_server(port)
+        _ = self.start_isabelle_server(port)
         return True
 
 
@@ -128,7 +132,16 @@ class IsabelleServerTmuxConnection:
                 if port_running:
                     break
                 sleep(1)
-            assert self.check_is_running(port,report=True)
+
+            is_running = self.check_is_running(port,report=True)
+            i=0
+            while not is_running and i<100:
+                is_running = self.check_is_running(port,report=True)
+                i+=1
+                sleep(1)
+            if i==100:
+                raise AssertionError
+            self.used_ports.add(port)
             sleep(5)
 
             print(
@@ -136,8 +149,30 @@ class IsabelleServerTmuxConnection:
             )
         return True
 
+    def clean_external_prover_memory_footprint(self):
+        os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+        os.system(
+            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
+        )
+        os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
+        sleep(5)
+
+
+    def full_clean_isabelle_footprint(self):
+        self.clean_external_prover_memory_footprint()
+        os.system("ps -ef | grep scala | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9")
+
+
+
     def close_isabelle_server(self, port):
-        if port not in self.used_ports:
-            print(f"Skip, no running session on port {port}.")
-        else:
-            self.kill_local_tmux_session(self.port_to_session(port))
+        self.clean_external_prover_memory_footprint()
+        os.system("rm -rf ~/interactive_isabelle/pisa/target/bg-jobs")
+        if port in self.used_ports:
+            self.used_ports.remove(port)
+        self.kill_local_tmux_session(self.port_to_session(port))
