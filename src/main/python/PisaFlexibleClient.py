@@ -238,6 +238,13 @@ class IsaFlexEnv:
                                 break
                         if step_correct:
                             method_name_to_premises_names_available[method_name].append(premise)
+
+                    os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
             if not step_successful:
                 unsuccessful_premises_names.append(premise)
 
