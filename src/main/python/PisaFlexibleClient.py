@@ -223,7 +223,9 @@ class IsaFlexEnv:
                     step_successful = True
 
                     for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp add", "by (simp add: ")]:
+                        logging.info(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
                         step = method + pisa_name + ")"
+                        logging.info(f"step: {step}")
                         next_proof_state, _, done, _ = self.step_to_top_level_state(
                             step,
                             isabelle_state.proof_state_id,
