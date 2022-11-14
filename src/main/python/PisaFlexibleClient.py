@@ -229,6 +229,7 @@ class IsaFlexEnv:
                             isabelle_state.proof_state_id,
                             -1,
                         )
+                        logging.info(f"next_proof_state: {next_proof_state}")
 
                         next_proof_state_clean = trim_string_optional(next_proof_state)
                         step_correct = True
