@@ -561,11 +561,11 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val start_time = System.currentTimeMillis();
     println("[step] start_time: " + start_time)
 
-    implicit val isabelle: Isabelle = new Isabelle(setup)
-    val thy2: Theory = beginTheory(theoryStarter)
-    println("[step] thy2.await")
-    thy2.await
-    println("[step] thy2 awaited")
+//    implicit val isabelle: Isabelle = new Isabelle(setup)
+//    val thy2: Theory = beginTheory(theoryStarter)
+//    println("[step] thy2.await")
+//    thy2.await
+//    println("[step] thy2 awaited")
 
 
     val f_st: Future[Unit] = Future.apply {
