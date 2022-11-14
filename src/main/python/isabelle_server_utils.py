@@ -1,6 +1,7 @@
 import subprocess
 from time import sleep
 import pathlib
+import os
 
 
 def find_pisa_path():
