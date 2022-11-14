@@ -565,6 +565,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
+            println("[step] transition:", transition)
+            println("[step] text:", text)
             tls_to_return = singleTransition(transition, tls_to_return)
             // println("Applied transition successfully")
           }

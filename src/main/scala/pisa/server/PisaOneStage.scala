@@ -119,6 +119,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       var actual_timeout = 10000
       val old_state: ToplevelState = pisaos.retrieve_tls(toplevel_state_name)
       var actual_step: String = "Gibberish"
+      println("Got action: " + action)
 
       if (action == GAP_STEP) {
         // If found a sledgehammer step, execute it differently
