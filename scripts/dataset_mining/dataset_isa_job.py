@@ -128,11 +128,6 @@ class IsaInstance:
         env = initialise_env(
             self.port, isa_path=self.isa_path, theory_file_path=self.theory_file
         )
-        if env.successful_starting:
-            print("Start doing post env initialising environment")
-            env.post("<initialise>")
-        else:
-            print("initialize_env function failed")
         return env
 
 
@@ -145,6 +140,7 @@ class DataIsaJob:
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
         metadata_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_metadata_log_dev",
     ):
+        breakpoint()
         self.theory_file_path = theory_file_path
         self.isa_path = os.path.expanduser(isa_path)
         self.out_dir = out_dir
@@ -254,3 +250,6 @@ class DataIsaJob:
             print("env init successful!")
             assert isa_instance.env is not None
             return isa_instance.env, pid
+
+job = DataIsaJob()
+job.execute()
