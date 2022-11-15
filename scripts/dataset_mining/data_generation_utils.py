@@ -2,6 +2,7 @@ import re
 
 from func_timeout import FunctionTimedOut
 
+
 def get_relative_path(theory_file_path):
     absolute_path = theory_file_path.split("/")
     if "thys" in absolute_path:
@@ -12,8 +13,11 @@ def get_relative_path(theory_file_path):
         prefix = "src:"
     return prefix + "/".join(absolute_path[idx + 1 :]).split(".")[0], prefix
 
+
 def extract_assumption_names(statement):
-    assert type(statement)==str, f"supplied type of statement: {statement} is not str!"
+    assert (
+        type(statement) == str
+    ), f"supplied type of statement: {statement} is not str!"
     no_ML = re.sub('".+?"', " ", statement)
 
     # escape special characters
@@ -25,13 +29,14 @@ def extract_assumption_names(statement):
     match_assumes = re.findall(f"assumes[ ]+{pattern_for_premise_names}[ ]*:", no_ML)
     match_and = re.findall(f"assumes[ ]+{pattern_for_premise_names}[ ]*:", no_ML)
 
-    match_assumes = [re.sub("(assumes )|:"," ",m).strip() for m in match_assumes]
-    match_and = [re.sub("(and )|:"," ",m).strip() for m in match_and]
+    match_assumes = [re.sub("(assumes )|:", " ", m).strip() for m in match_assumes]
+    match_and = [re.sub("(and )|:", " ", m).strip() for m in match_and]
     # if "assumes " in statement:
     #     print(f"statement with asms: {statement}")
     #     breakpoint()
 
-    return match_assumes+match_and
+    return match_assumes + match_and
+
 
 def process_match2(match2_all):
     if match2_all is []:
@@ -46,7 +51,9 @@ def process_match2(match2_all):
             low = int(numbers[0])
             high = int(numbers[1])
 
-            assert low < high, f"low: {low} is not less than high: {high} for string: {match2.group(0)}"
+            assert (
+                low < high
+            ), f"low: {low} is not less than high: {high} for string: {match2.group(0)}"
             premise_bundle_numbers = [i for i in range(low, high + 1)]
             result += [f"{name}({number})" for number in premise_bundle_numbers]
         return list(set(result))
@@ -107,9 +114,9 @@ def fish_out_actual_premise_names(step):
     else:
         result = special_matches[0]
 
-    assert type(result)==list
-    if len(result)>0:
-        if not type(result[0])==str:
+    assert type(result) == list
+    if len(result) > 0:
+        if not type(result[0]) == str:
             pass
     return result
 
@@ -129,7 +136,9 @@ def isa_step_to_fact_candidates(step):
     escaped_string_of_special_characters = re.escape("()_'<-,>^.\\")
 
     # wipe everything that is not characters usable in fact names
-    pattern_for_premise_names = re.compile(f"[^a-zA-Z0-9{escaped_string_of_special_characters}]+")
+    pattern_for_premise_names = re.compile(
+        f"[^a-zA-Z0-9{escaped_string_of_special_characters}]+"
+    )
     clean_step = re.sub(pattern_for_premise_names, " ", clean_step)
     clean_step = re.sub("(?<![0-9])[-,]", " ", clean_step)
 
@@ -139,7 +148,7 @@ def isa_step_to_fact_candidates(step):
     # remove duplicates
     candidates = list(set(candidates))
 
-    candidates = sum([fish_out_actual_premise_names(c) for c in candidates],[])
+    candidates = sum([fish_out_actual_premise_names(c) for c in candidates], [])
     if candidates is None:
         candidates = []
     return candidates
@@ -151,10 +160,19 @@ def auxiliary_simp_metis_smt_meson_matches(candidates, step, force=False):
     if force or any(
         [
             word in step
-            for word in ["metis", "smt", "add:", "meson", "auto", "unfolding", "using", "by"]
+            for word in [
+                "metis",
+                "smt",
+                "add:",
+                "meson",
+                "auto",
+                "unfolding",
+                "using",
+                "by",
+            ]
         ]
     ):
-        return sum([fish_out_actual_premise_names(c) for c in candidates],[])
+        return sum([fish_out_actual_premise_names(c) for c in candidates], [])
     else:
         return []
 
@@ -236,10 +254,15 @@ def split_over_suffixes(fact_dict):
     if fact_dict is None:
         return {}
     expanded_fact_dict = {}
-    for premise_name, premise_stmt in fact_dict.items():
+    fact_list = list(fact_dict.items())
+    fact_list.sort(key=lambda x: x.count("."), reverse=True)
+    for premise_name, premise_stmt in fact_list:
         split = premise_name.split(".")
         all_suffixes = [".".join(split[-i:]) for i in range(len(split))]
-        expanded_fact_dict.update({suff: premise_stmt for suff in all_suffixes})
+        expanded_fact_dict = {
+            **expanded_fact_dict,
+            **{suff: (premise_name, premise_stmt) for suff in all_suffixes},
+        }
     return expanded_fact_dict
 
 
@@ -251,12 +274,14 @@ def match_premise_and_facts_w_statements(premise, fact_dict):
     else:
         return []
 
+
 def match_named_premise_w_statements(named_premise, fact_dict):
-    premises = [named_premise]+[f"{named_premise}(n)" for n in range(15)]
+    premises = [named_premise] + [f"{named_premise}(n)" for n in range(15)]
     result = []
     for premise in premises:
         result += match_premise_and_facts_w_statements(premise, fact_dict)
     return result
+
 
 def process_raw_thm_deps(raw_thm_deps):
     all_thm_deps = {}
@@ -265,4 +290,3 @@ def process_raw_thm_deps(raw_thm_deps):
         all_suffixes = [".".join(split[-i:]) for i in range(len(split))]
         all_thm_deps.update({suff: entry for suff in all_suffixes})
     return all_thm_deps
-
