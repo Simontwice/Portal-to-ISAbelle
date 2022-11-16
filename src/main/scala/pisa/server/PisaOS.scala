@@ -421,8 +421,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def getFacts(stateString: String): String = {
     var facts: String = ""
     if (stateString.trim.nonEmpty) {
-      // Limit the maximum number of local facts to be 500
-      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(500)) {
+      // Limit the maximum number of local facts to be 5000
+      for (fact <- make_pretty_list_string_list(pretty_local_facts(toplevel, false)).retrieveNow.takeRight(5000)) {
         facts = facts + fact + "<\\PISASEP>"
       }
     }

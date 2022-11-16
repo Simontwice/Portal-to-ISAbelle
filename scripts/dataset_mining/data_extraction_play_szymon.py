@@ -103,7 +103,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
         ######################################################## STEP ##################################################
         try:
             start = time.time()
-            state, rew, done, _ = env.step_to_top_level_state(step, "default", "default")
+            state = None#TODO:revert this, rew, done, _ = env.step_to_top_level_state(step, "default", "default")
             end = time.time()
             step_duration = end - start
             if step_duration > 5:
@@ -254,11 +254,11 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             total_stuff_to_check_sh = (
                 sh_transition["premises_without_statements"] + sh_transition["definitions"]
             )
-            for premise in total_stuff_to_check_sh:
-                premise_and_statement_list = match_premise_and_facts_w_statements(
-                    premise, global_and_local_facts_accelerated_sh
+            for sh_premise in total_stuff_to_check_sh:
+                premise_and_statement_list_sh = match_premise_and_facts_w_statements(
+                    sh_premise, global_and_local_facts_accelerated_sh
                 )
-                sh_transition["premises"] += premise_and_statement_list
+                sh_transition["premises"] += premise_and_statement_list_sh
             sh_transition["premises"] = dict(set(sh_transition["premises"]))
 
     ########################################### AND WRITE TO FILE #####################################
