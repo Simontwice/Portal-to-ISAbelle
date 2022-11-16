@@ -263,20 +263,20 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
 
     ########################################### AND WRITE TO FILE #####################################
 
-    with open(f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:-1])}.json', "w") as fp:
+    with open(f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w") as fp:
         json.dump(proofs, fp, indent=2)
 
-    with open(f'{out_dir}_SH/{"_".join(file_relative_path.split("/")[-3:-1])}.json', "w") as fsh:
+    with open(f'{out_dir}_SH/{"_".join(file_relative_path.split("/")[-3:])}.json', "w") as fsh:
         json.dump(sledgehammer_proofs, fsh, indent=2)
 
     with open(
-        f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:-1])}.json', "w"
+        f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
     ) as fp:
         json.dump(file_processing_info, fp, indent=2)
 
     if len(wrong_thm_deps) > 0:
         with open(
-            f'{error_log_dir}/{"_".join(file_relative_path.split("/")[-3:-1])}.json', "w"
+            f'{error_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
         ) as fpe:
             json.dump(wrong_thm_deps, fpe, indent=2)
 
