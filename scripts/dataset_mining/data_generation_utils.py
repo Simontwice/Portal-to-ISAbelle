@@ -84,8 +84,7 @@ def fish_out_actual_premise_names(step):
         else:
             result = []
     else:
-        result = special_matches[0]
-    breakpoint()
+        result = [special_matches[0]]
     return result
 
 
