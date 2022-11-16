@@ -103,7 +103,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
         ######################################################## STEP ##################################################
         try:
             start = time.time()
-            state = None#TODO:revert this, rew, done, _ = env.step_to_top_level_state(step, "default", "default")
+            state, rew, done, _ = env.step_to_top_level_state(step, "default", "default")
             end = time.time()
             step_duration = end - start
             if step_duration > 5:
@@ -123,9 +123,9 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
         finished_subproof = proof_level < prev_proof_level
         if finished_subproof:
             # SH step time
-            state_sh, rew, done, _ = env.step_to_top_level_state(
-                "sledgehammer", "prev default", "sh_default"
-            )
+            state_sh = ""#TODO:revert rew, done, _ = env.step_to_top_level_state(
+            #     "sledgehammer", "prev default", "sh_default"
+            # )
 
             os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
