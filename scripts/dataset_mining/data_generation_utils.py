@@ -87,7 +87,8 @@ def fish_out_actual_premise_names(step):
         result = [special_matches[0]]
 
     assert type(result)==list
-    assert type(result[0])==str
+    if len(result)>0:
+        assert type(result[0])==str
     return result
 
 
