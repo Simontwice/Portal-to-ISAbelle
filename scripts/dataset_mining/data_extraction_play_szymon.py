@@ -1,4 +1,5 @@
 import json
+import os
 import time
 
 from absl import logging
@@ -125,6 +126,13 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             state_sh, rew, done, _ = env.step_to_top_level_state(
                 "sledgehammer", "prev default", "sh_default"
             )
+
+            os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+            os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+            os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+            os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
+            os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+
             hammer_time_success = state_sh.startswith("by ")
             if hammer_time_success:
                 hammer_step = state_sh.split("<hammer>")[0]
