@@ -119,7 +119,7 @@ def isa_step_to_fact_candidates(step):
     # wipe everything that is not characters usable in fact names
     pattern_for_premise_names = re.compile(f"[^a-zA-Z0-9{escaped_string_of_special_characters}]+")
     clean_step = re.sub(pattern_for_premise_names, " ", clean_step)
-    clean_step = re.sub("(?<![0-9])[-,]", clean_step)
+    clean_step = re.sub("(?<![0-9])[-,]", " ", clean_step)
 
     # split by spaces
     candidates = clean_step.split()
