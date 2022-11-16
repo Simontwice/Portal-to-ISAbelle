@@ -3,7 +3,6 @@ import time
 
 from absl import logging
 from func_timeout import FunctionTimedOut
-from pisa.src.main.python.PisaFlexibleClient import initialise_env
 from smart_open import open
 
 from data_generation_utils import (
@@ -185,7 +184,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                 # metric_logging.log_scalar("thm_deps_time", thm_deps_step, value=thm_deps_time)
 
                 ################################## END OF PROOF THM DEPS TO STEP MATCHING ##############################
-                for step_num, transition in enumerate(current_proof["transitions"]):
+                for t_num, transition in enumerate(current_proof["transitions"]):
                     transition["premises_without_statements"] = []
                     auxiliary_matches = auxiliary_simp_metis_smt_meson_matches(
                         transition["possible_premises"], transition["step"]
@@ -196,7 +195,6 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                     transition["premises_without_statements"] = list(
                         set(transition["premises_without_statements"] + auxiliary_matches)
                     )
-                    transition["premises"] = list(set(transition["premises"]))
                 proofs.append(current_proof)
                 sledgehammer_proofs.append(current_proof_sledgehammer)
         if (
@@ -239,7 +237,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                     premise, global_and_local_facts_accelerated
                 )
                 transition["premises"] += premise_and_statement_list
-            transition["premises"] = list(set(transition["premises"]))
+            transition["premises"] = dict(set(transition["premises"]))
 
     for sh_proof in sledgehammer_proofs:
         local_facts_accelerated_sh = split_over_suffixes(sh_proof["local_facts"])
@@ -253,7 +251,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                     premise, global_and_local_facts_accelerated_sh
                 )
                 sh_transition["premises"] += premise_and_statement_list
-            sh_transition["premises"] = list(set(sh_transition["premises"]))
+            sh_transition["premises"] = dict(set(sh_transition["premises"]))
 
     ########################################### AND WRITE TO FILE #####################################
 
