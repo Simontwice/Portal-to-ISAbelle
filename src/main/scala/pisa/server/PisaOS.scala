@@ -448,13 +448,13 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def getProofLevel: Int = getProofLevel(toplevel)
 
-  def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState): ToplevelState = {
-    command_exception_with_timeout(true, single_transition, top_level_state, 7).retrieveNow.force
+  def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState, timeout: Int): ToplevelState = {
+    command_exception_with_timeout(true, single_transition, top_level_state, timeout).retrieveNow.force
   }
 
   def singleTransition(singTransition: Transition.T): String = {
     //    TODO: inlcude global facts
-    toplevel = singleTransition(singTransition, toplevel)
+    toplevel = singleTransition(singTransition, toplevel, 10)
     getStateString
   }
 
@@ -548,7 +548,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
               + s"${hammer_results._1}" + "<\\HAMMERSEP>" + s"${hammer_results._2}"
               + "<\\HAMMERSEP>" + s"${hammer_results._3}" + "<\\TRANSEP>"
             )
-          parse_toplevel = singleTransition(transition, parse_toplevel)
+          parse_toplevel = singleTransition(transition, parse_toplevel, 10)
           stateString = getStateString(parse_toplevel)
         }
     }
@@ -565,6 +565,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val continue = new Breaks
     val start_time = System.currentTimeMillis();
     println("[step] start_time: " + start_time)
+    val timeout_in_seconds = 1.max(timeout_in_millis / 1000) // Let the minimum timeout be 1 second.
+    val timeout_in_seconds = 7
 
 //    implicit val isabelle: Isabelle = new Isabelle(setup)
 //    val thy2: Theory = beginTheory(theoryStarter)
@@ -580,7 +582,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
             println("[step] text: " + text)
-            tls_to_return = singleTransition(transition, tls_to_return)
+            tls_to_return = singleTransition(transition, tls_to_return, timeout_in_seconds)
             // println("Applied transition successfully")
           }
       }
