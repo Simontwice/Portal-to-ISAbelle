@@ -571,7 +571,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     println("[step] start_time: " + start_time)
 
     val timeout_in_seconds = 1.max(timeout_in_millis / 1000) // Let the minimum timeout be 1 second.
-    val timeout_in_seconds = 7
+//    val timeout_in_seconds = 7
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {

@@ -116,9 +116,8 @@ class OneStageBody extends ZServer[ZEnv, Any] {
     ""
   }
 
-  def deal_with_apply_to_tls(toplevel_state_name: String, action: String, new_name: String): String = {
+  def deal_with_apply_to_tls(toplevel_state_name: String, action: String, new_name: String, timeout_in_millis: Int): String = {
     if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
-      var actual_timeout = 10000
       val old_state: ToplevelState = pisaos.retrieve_tls(toplevel_state_name)
       var actual_step: String = "Gibberish"
       println("[deal_with_apply_to_tls] action: " + action)
@@ -164,7 +163,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
       }
       // println("Actual step: " + actual_step)
 
-      val new_state: ToplevelState = pisaos.step(actual_step, old_state, actual_timeout)
+      val new_state: ToplevelState = pisaos.step(actual_step, old_state, timeout_in_millis)
       // println("Application successful")
       println("new_state: " + pisaos.getStateString(new_state))
       println("new_name: " + new_name)
@@ -302,8 +301,9 @@ class OneStageBody extends ZServer[ZEnv, Any] {
           val tls_name: String = isa_command.command.split("<apply to top level state>")(1).trim
           val action: String = isa_command.command.split("<apply to top level state>")(2).trim
           val new_name: String = isa_command.command.split("<apply to top level state>")(3).trim
+          val timeout: Int = isa_command.command.split("<apply to top level state>")(4).trim.toInt
           try {
-            deal_with_apply_to_tls(tls_name, action, new_name)
+            deal_with_apply_to_tls(tls_name, action, new_name, timeout)
           } catch {
             case e: IsabelleException => {
               println("[isabelleCommand][exception] action: " + action)
