@@ -69,7 +69,9 @@ class OneStageBody extends ZServer[ZEnv, Any] {
   def deal_with_list_states(): String = pisaos.top_level_state_map.keys.mkString(" | ")
 
   def deal_with_initialise(): String = {
+    println("Intialising the problem...")
     pisaos.top_level_state_map += ("default" -> pisaos.copy_tls)
+    println("Intialised...")
     "Toplevel state 'default' is ready"
   }
 
@@ -308,10 +310,10 @@ class OneStageBody extends ZServer[ZEnv, Any] {
               println("[isabelleCommand][exception] IsabelleException: " + e.getMessage + "\n")
               "Step error: " + e.getMessage
             }
-            case e: Throwable => {
+            case f: Throwable => {
               println("[isabelleCommand][exception] action: " + action)
-              println("[isabelleCommand][exception] IsabelleException: " + e.getMessage + "\n")
-              "Unknown error: " + e.getMessage
+              println("[isabelleCommand][exception] IsabelleException: " + f.getMessage + "\n")
+              "Unknown error: " + f.getMessage
             }
           }
         }

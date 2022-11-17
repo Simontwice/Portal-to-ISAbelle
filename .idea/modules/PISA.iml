@@ -14,6 +14,7 @@
       <excludeFolder url="file://$MODULE_DIR$/../../target/streams" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/task-temp-directory" />
       <excludeFolder url="file://$MODULE_DIR$/../../venv" />
+      <excludeFolder url="file://$MODULE_DIR$/.." />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.8 (Portal-to-ISAbelle)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

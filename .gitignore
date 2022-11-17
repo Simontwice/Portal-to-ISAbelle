@@ -15,6 +15,7 @@ generated/
 *.tar.gz
 # JetBrains PyCharm IDE
 .idea/
+.idea/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -126,3 +127,4 @@ ENV/
 
 #src_old from copying
 .src_old/
+/.idea/

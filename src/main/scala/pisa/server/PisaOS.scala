@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 import _root_.java.nio.file.{Files, Path}
 import _root_.java.io.File
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLFunction4, MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 import de.unruh.isabelle.pure.{Context, Position, Theory, TheoryHeader, ToplevelState}
 import pisa.utils.TheoryManager
@@ -96,38 +96,38 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     """fn (int, tr, st) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
       |  in Timeout.apply (Time.fromSeconds 9) go_run (int, tr, st) end""".stripMargin)
-//  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, ToplevelState, Int] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState, Int](
-//    """fn (int, tr, st, timeout) => let
-//      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
-//      |  in Timeout.apply (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
+  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, ToplevelState, Int] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState, Int](
+    """fn (int, tr, st, timeout) => let
+      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
+      |  in Timeout.apply (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
   val command_errors: MLFunction3[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])] = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
   val toplevel_end_theory: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
 //  val theory_of_state: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
 //  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
 //  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
-  val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
-    """fn (thy, text) => let
-      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-      |  fun addtext symbols [tr] =
-      |        [(tr, implode symbols)]
-      |    | addtext _ [] = []
-      |    | addtext symbols (tr::nextTr::trs) = let
-      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
-      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
 //  val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
 //    """fn (thy, text) => let
-//      |  fun go_run (thy1, text1) = let
-//      |  | val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
-//      |  | fun addtext symbols [tr] =
-//      |          [(tr, implode symbols)]
-//      |      | addtext _ [] = []
-//      |      | addtext symbols (tr::nextTr::trs) = let
-//      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-//      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
-//      |  | in addtext (Symbol.explode text1) transitions end
-//      |  in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
+//      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
+//      |  fun addtext symbols [tr] =
+//      |        [(tr, implode symbols)]
+//      |    | addtext _ [] = []
+//      |    | addtext symbols (tr::nextTr::trs) = let
+//      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+//      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
+//      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
+  val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
+    """fn (thy, text) => let
+      |  fun go_run (thy1, text1) = let
+      |  | val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
+      |  | fun addtext symbols [tr] =
+      |          [(tr, implode symbols)]
+      |      | addtext _ [] = []
+      |      | addtext symbols (tr::nextTr::trs) = let
+      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
+      |  | in addtext (Symbol.explode text1) transitions end
+      |  in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
@@ -373,23 +373,6 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val Sledgehammer_Commands: String = thy_for_sledgehammer.importMLStructureNow("Sledgehammer_Commands")
   val Sledgehammer: String = thy_for_sledgehammer.importMLStructureNow("Sledgehammer")
   val Sledgehammer_Prover: String = thy_for_sledgehammer.importMLStructureNow("Sledgehammer_Prover")
-  // val check_with_Sledgehammer: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean](
-  //   s""" fn state =>
-  //      |    (
-  //      |    let
-  //      |      val ctxt = Toplevel.context_of state;
-  //      |      val thy = Proof_Context.theory_of ctxt
-  //      |      val p_state = Toplevel.proof_of state;
-  //      |      val params = ${Sledgehammer_Commands}.default_params thy
-  //      |                      [("isar_proofs", "false"),("smt_proofs", "true"),("learn","true")]
-  //      |      val override = {add=[],del=[],only=false}
-  //      |      val run_sledgehammer = ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Auto_Try
-  //      |                                  NONE 1 override
-  //      |                                : Proof.state -> bool * (string * string list);
-  //      |    in
-  //      |      run_sledgehammer p_state |> fst
-  //      |    end)
-  //   """.stripMargin)
 
   // prove_with_Sledgehammer is mostly identical to check_with_Sledgehammer except for that when the returned Boolean is true, it will 
   // also return a non-empty list of Strings, each of which contains executable commands to close the top subgoal. We might need to chop part of 
@@ -580,7 +563,6 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def step(isar_string: String, top_level_state: ToplevelState, timeout_in_millis: Int = 2000): ToplevelState = {
     // Normal isabelle business
     var tls_to_return: ToplevelState = clone_tls_scala(top_level_state)
-    var stateString: String = ""
     val continue = new Breaks
     val start_time = System.currentTimeMillis();
     println("[step] start_time: " + start_time)
@@ -598,16 +580,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
-            println("[step] transition: " + transition)
             println("[step] text: " + text)
             tls_to_return = singleTransition(transition, tls_to_return)
             // println("Applied transition successfully")
           }
       }
     }
-    Await.result(f_st, Duration(timeout_in_millis, "millis"))
+    Await.result(f_st, Duration.Inf)
     println("[step] elapsed:" + (System.currentTimeMillis() - start_time))
-    // println("Did step successfully")
+    println("[step] f_st:" + (f_st))
     tls_to_return
   }
 
