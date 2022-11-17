@@ -126,7 +126,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
                  val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
                  in (tr, implode this) :: addtext rest (nextTr::trs) end
            in addtext (Symbol.explode text1) transitions end
-         in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
+         in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""")
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
