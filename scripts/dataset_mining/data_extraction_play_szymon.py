@@ -13,7 +13,7 @@ from data_generation_utils import (
     match_premise_and_facts_w_statements,
     split_over_suffixes,
     auxiliary_simp_metis_smt_meson_matches,
-    get_relative_path
+    get_relative_path, extract_assumption_names
 )
 
 thm_deps_step = 0
@@ -49,15 +49,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
     proof_level = 0
     prev_proof_level = 0
     state = None
-    local_facts_already_extracted = False
 
-    current_proof = {"statement": None, "transitions": [], "local_facts": {}, "assumptions": {}}
-    current_proof_sledgehammer = {
-        "statement": None,
-        "transitions": [],
-        "local_facts": {},
-        "assumptions": {},
-    }
     context_names = ["EMPTY"]
 
     if len(all_steps) <= 5:
@@ -65,6 +57,15 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
         return file_processing_info
 
     for step_num, step in enumerate(all_steps):
+        if not proof_open:
+            current_proof = {"statement": None, "transitions": [], "local_facts": {}, "assumptions": {}, "named_assumptions":{}}
+            current_proof_sledgehammer = {
+                "statement": None,
+                "transitions": [],
+                "local_facts": {},
+                "assumptions": {},
+                "named_assumptions":{},
+            }
         global thm_deps_step
         if step.startswith(
             "context "
@@ -73,16 +74,6 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             context_names.append(step_split[step_split.index("context") + 1])
 
         if proof_open and not step.startswith("text"):
-            if not local_facts_already_extracted:
-                local_facts = env.dataset_extraction_local_facts(isabelle_state="default")
-                local_facts_already_extracted = True
-                current_proof["local_facts"] = local_facts
-                current_proof_sledgehammer["local_facts"] = local_facts
-                assms = {
-                    name: statement for name, statement in local_facts.items() if "assms" in name
-                }
-                current_proof["assumptions"] = assms
-                current_proof_sledgehammer["assumptions"] = assms
 
             possible_premises = isa_step_to_fact_candidates(step)
             current_proof["transitions"].append(
@@ -118,9 +109,28 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             file_processing_info["step_failed"] = True
             file_processing_info["step_failed_info"] = (step_num, (step, len(all_steps)))
             return file_processing_info
-        ############################################### SLEDGEHAMMER STEP ##############################################
+
+        ################################################## LOCAL FACTS #################################################
         proof_level = int(env.get_proof_level("default"))
         finished_subproof = proof_level < prev_proof_level
+
+        if finished_subproof and proof_level == 0:
+            local_facts = env.dataset_extraction_local_facts(isabelle_state="prev default")
+            local_facts_accelerated = split_over_suffixes(local_facts)
+            statement = current_proof_sledgehammer["statement"]
+            named_assumptions = extract_assumption_names(statement)
+            current_proof["local_facts"] = local_facts
+            current_proof_sledgehammer["local_facts"] = local_facts
+            assms = {
+                name: statement for name, statement in local_facts.items() if "assms" in name
+            }
+            named_assumptions_dict = dict(sum([match_premise_and_facts_w_statements(premise, local_facts_accelerated) for premise in named_assumptions],[]))
+            current_proof["assumptions"] = assms
+            current_proof["named_assumptions"] = named_assumptions_dict
+            current_proof_sledgehammer["assumptions"] = assms
+            current_proof_sledgehammer["named_assumptions"] = named_assumptions_dict
+        ############################################### SLEDGEHAMMER STEP ##############################################
+
         if finished_subproof:
             # SH step time
             state_sh = ""#TODO:revert rew, done, _ = env.step_to_top_level_state(
@@ -163,7 +173,6 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             if proof_level == 0:
                 thm_deps_step += 1
                 proof_open = False
-                local_facts_already_extracted = False
 
                 ################################################## THM DEPS ############################################
                 logging.info(f"Trying to extract thm_deps")
@@ -205,6 +214,8 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                     )
                 proofs.append(current_proof)
                 sledgehammer_proofs.append(current_proof_sledgehammer)
+                del current_proof
+                del current_proof_sledgehammer
         if (
             len(all_steps) - step_num == 5
         ):  # if we're near the end, call global facts. When called at the very end, it often fails

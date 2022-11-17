@@ -12,34 +12,58 @@ def get_relative_path(theory_file_path):
         prefix = "src:"
     return prefix + "/".join(absolute_path[idx + 1 :]).split(".")[0], prefix
 
-def process_match2(match2):
-    if match2 is None:
-        return None
+def extract_assumption_names(statement):
+    no_ML = re.sub('".+?"', " ", statement)
+
+    # escape special characters
+    escaped_string_of_special_characters = re.escape("()_'<>^.\\")
+
+    # wipe everything that is not characters usable in fact names
+    pattern_for_premise_names = f"[a-zA-Z0-9{escaped_string_of_special_characters}]+"
+
+    match_assumes = re.findall(f"assumes[ ]+{pattern_for_premise_names}[ ]*:", no_ML)
+    match_and = re.findall(f"assumes[ ]+{pattern_for_premise_names}[ ]*:", no_ML)
+
+    match_assumes = [re.sub("(assumes )|:"," ",m).strip() for m in match_assumes]
+    match_and = [re.sub("(and )|:"," ",m).strip() for m in match_and]
+
+    return match_assumes+match_and
+
+def process_match2(match2_all):
+    if match2_all is []:
+        return []
     else:
-        split = match2.split("(-)")
-        split = list(filter(lambda x: x is not "", split))
-        name, numbers = split[0], split[1:]
+        result = []
+        for match2 in match2_all:
+            split = match2.split("(-)")
+            split = list(filter(lambda x: x is not "", split))
+            name, numbers = split[0], split[1:]
 
-        low = int(numbers[0])
-        high = int(numbers[1])
+            low = int(numbers[0])
+            high = int(numbers[1])
 
-        assert low < high, f"low: {low} is not less than high: {high} for string: {match2.group(0)}"
-        premise_bundle_numbers = [i for i in range(low, high + 1)]
-        return [f"{name}({number})" for number in premise_bundle_numbers]
+            assert low < high, f"low: {low} is not less than high: {high} for string: {match2.group(0)}"
+            premise_bundle_numbers = [i for i in range(low, high + 1)]
+            result += [f"{name}({number})" for number in premise_bundle_numbers]
+        return list(set(result))
 
 
-def process_match3(match3):
-    if match3 is None:
-        return None
+def process_match3(match3_all):
+    if match3_all is []:
+        return []
     else:
-        split = match3.split("(,)")
-        split = list(filter(lambda x: x is not "", split))
-        name, numbers = split[0], split[1:]
+        result = []
+        for match3 in match3_all:
+            split = match3.split("(,)")
+            split = list(filter(lambda x: x is not "", split))
+            name, numbers = split[0], split[1:]
 
-        assert all(
-            [num.isdigit() for num in numbers]
-        ), f"not all strings in {numbers} are integers!"
-        return [f"{name}({number})" for number in numbers]
+            assert all(
+                [num.isdigit() for num in numbers]
+            ), f"not all strings in {numbers} are integers!"
+
+            result += [f"{name}({number})" for number in numbers]
+        return result
 
 
 def fish_out_actual_premise_names(step):
@@ -53,23 +77,15 @@ def fish_out_actual_premise_names(step):
     pattern2 = f"{premise_name_characters}+\([0-9]+\-[0-9]+\)"
     pattern3 = f"{premise_name_characters}+\([0-9]+(,[0-9])+\)"
 
-    match0 = re.search(pattern0, step)
-    if match0 is not None:
-        match0 = match0.group(0)
-    match1 = re.search(pattern1, step)
-    if match1 is not None:
-        match1 = match1.group(0)
-    match2 = re.search(pattern2, step)
-    if match2 is not None:
-        match2 = match2.group(0)
-    match3 = re.search(pattern3, step)
-    if match3 is not None:
-        match3 = match3.group(0)
+    match0 = re.findall(pattern0, step)
+    match1 = re.findall(pattern1, step)
+    match2 = re.findall(pattern2, step)
+    match3 = re.findall(pattern3, step)
 
     match2 = process_match2(match2)
     match3 = process_match3(match3)
 
-    special_matches = [match for match in [match1, match2, match3] if match is not None]
+    special_matches = [match for match in [match1, match2, match3] if match is not []]
     num_of_special_matches = len(special_matches)
     if num_of_special_matches > 1:
         print(
@@ -79,8 +95,8 @@ def fish_out_actual_premise_names(step):
     result = []
     if num_of_special_matches == 0:
         # it is a normal name
-        if match0 is not None:
-            result = [match0]
+        if match0 is not []:
+            result = [match0[0]]
         else:
             result = []
     else:
@@ -90,19 +106,6 @@ def fish_out_actual_premise_names(step):
     if len(result)>0:
         assert type(result[0])==str
     return result
-
-
-# def remove_parentheses_if_not_bundled(step):
-#     assert type(step) == str, f"expected type string, but received {type(step)}"
-#     if step.startswith("("):
-#         step = step.lstrip("(")
-#     if step.endswith(")") and len(step.rstrip(")")) > 0:
-#         if step.rstrip(")")[-1].isdigit():
-#             return step.rstrip(")") + ")"
-#         else:
-#             return step.rstrip(")")
-#     else:
-#         return step
 
 
 def isa_step_to_fact_candidates(step):
