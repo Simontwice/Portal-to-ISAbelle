@@ -3,7 +3,7 @@ package pisa.server
 import _root_.java.nio.file.{Files, Path}
 import _root_.java.io.File
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLFunction4, MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 import de.unruh.isabelle.pure.{Context, Position, Theory, TheoryHeader, ToplevelState}
 import pisa.utils.TheoryManager
