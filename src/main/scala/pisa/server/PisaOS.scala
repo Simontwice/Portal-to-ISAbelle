@@ -86,8 +86,10 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //  val is_skipped_proof: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean]("Toplevel.is_skipped_proof")
   val proof_level: MLFunction[ToplevelState, Int] = compileFunction[ToplevelState, Int]("Toplevel.level")
   val proof_of: MLFunction[ToplevelState, ProofState.T] = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
-  val command_exception: MLFunction[(Boolean, Transition.T, ToplevelState), ToplevelState] = compileFunction[(Boolean, Transition.T, ToplevelState), ToplevelState](
-    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) (int, tr, st)")
+  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
+    "fn (int, tr, st) => Toplevel.command_exception int tr st")
+//  val command_exception: MLFunction[(Boolean, Transition.T, ToplevelState), ToplevelState] = compileFunction[(Boolean, Transition.T, ToplevelState), ToplevelState](
+//    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) (int, tr, st)")
 //  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
 //    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) int tr st")
 //  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
@@ -461,7 +463,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def getProofLevel: Int = getProofLevel(toplevel)
 
   def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState): ToplevelState = {
-    command_exception((true, single_transition, top_level_state)).retrieveNow.force
+    command_exception(true, single_transition, top_level_state).retrieveNow.force
   }
 
   def singleTransition(singTransition: Transition.T): String = {
