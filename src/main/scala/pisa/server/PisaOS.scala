@@ -87,19 +87,13 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val proof_level: MLFunction[ToplevelState, Int] = compileFunction[ToplevelState, Int]("Toplevel.level")
   val proof_of: MLFunction[ToplevelState, ProofState.T] = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
 //  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-//    "fn (int, tr, st) => Toplevel.command_exception int tr st")
-//  val command_exception: MLFunction[(Boolean, Transition.T, ToplevelState), ToplevelState] = compileFunction[(Boolean, Transition.T, ToplevelState), ToplevelState](
-//    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) (int, tr, st)")
-//  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-//    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) int tr st")
-  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-    """fn (int, tr, st) => let
-      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
-      |  in Timeout.apply (Time.fromSeconds 9) go_run (int, tr, st) end""".stripMargin)
+//    """fn (int, tr, st) => let
+//      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
+//      |  in Timeout.apply (Time.fromSeconds 10) go_run (int, tr, st) end""".stripMargin)
   val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, Int, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, Int, ToplevelState](
     """fn (int, tr, st, timeout) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
-      |  in Timeout.apply (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
+      |  in Timeout.apply_physical (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
   val command_errors: MLFunction3[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])] = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
   val toplevel_end_theory: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
@@ -126,7 +120,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
                  val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
                  in (tr, implode this) :: addtext rest (nextTr::trs) end
            in addtext (Symbol.explode text1) transitions end
-         in Timeout.apply (Time.fromSeconds timeout) go_run (thy, text) end""")
+         in Timeout.apply_physical (Time.fromSeconds timeout) go_run (thy, text) end""")
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
@@ -568,26 +562,25 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var tls_to_return: ToplevelState = clone_tls_scala(top_level_state)
     val continue = new Breaks
     val start_time = System.currentTimeMillis();
-    println("[step] start_time: " + start_time)
+//    println("[step] start_time: " + start_time)
 
     val timeout_in_seconds = 1.max(timeout_in_millis / 1000) // Let the minimum timeout be 1 second.
-//    val timeout_in_seconds = 7
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
-        for ((transition, text) <- parse_text_with_timeout(thy1, isar_string, 10).force.retrieveNow)
+        for ((transition, text) <- parse_text_with_timeout(thy1, isar_string, timeout_in_seconds).force.retrieveNow)
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
-            println("[step] text: " + text)
+//            println("[step] text: " + text)
             tls_to_return = singleTransitionWithTimeout(transition, tls_to_return, timeout_in_seconds)
             // println("Applied transition successfully")
           }
       }
     }
     Await.result(f_st, Duration.Inf)
-    println("[step] elapsed:" + (System.currentTimeMillis() - start_time))
-    println("[step] f_st:" + (f_st))
+//    println("[step] elapsed:" + (System.currentTimeMillis() - start_time))
+//    println("[step] f_st:" + (f_st))
     tls_to_return
   }
 
