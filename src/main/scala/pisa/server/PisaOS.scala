@@ -86,10 +86,10 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //  val is_skipped_proof: MLFunction[ToplevelState, Boolean] = compileFunction[ToplevelState, Boolean]("Toplevel.is_skipped_proof")
   val proof_level: MLFunction[ToplevelState, Int] = compileFunction[ToplevelState, Int]("Toplevel.level")
   val proof_of: MLFunction[ToplevelState, ProofState.T] = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
-  val command_exception: MLFunction[(Boolean, Transition.T, ToplevelState), ToplevelState] = compileFunction[(Boolean, Transition.T, ToplevelState), ToplevelState](
-    "fn (int, tr, st) => Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception (int tr st)")
-//  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-//    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) int tr st")
+//  val command_exception: MLFunction[(Boolean, Transition.T, ToplevelState), ToplevelState] = compileFunction[(Boolean, Transition.T, ToplevelState), ToplevelState](
+//    "fn (int, tr, st) => Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception (int tr st)")
+  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
+    "fn (int, tr, st) => (Timeout.apply (Time.fromSeconds 3) Toplevel.command_exception) int tr st")
 //  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
 //    """fn (int, tr, st) => let
 //      |  fun go_run a b c = Toplevel.command_exception a b c
@@ -102,14 +102,16 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
-      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-      |  fun addtext symbols [tr] =
-      |        [(tr, implode symbols)]
-      |    | addtext _ [] = []
-      |    | addtext symbols (tr::nextTr::trs) = let
-      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
-      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
+      |  fun go_run a b = let
+      |  | val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
+      |  | fun addtext symbols [tr] =
+      |          [(tr, implode symbols)]
+      |      | addtext _ [] = []
+      |      | addtext symbols (tr::nextTr::trs) = let
+      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
+      |  | in addtext (Symbol.explode text) transitions end
+      |  in (Timeout.apply (Time.fromSeconds 3) go_run) thy text""".stripMargin)
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
