@@ -448,8 +448,12 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def getProofLevel: Int = getProofLevel(toplevel)
 
+  def singleTransitionWithTimeout(single_transition: Transition.T, top_level_state: ToplevelState, timeout: Int): ToplevelState = {
+    command_exception_with_timeout(true, single_transition, top_level_state, ).retrieveNow.force
+  }
+
   def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState): ToplevelState = {
-    command_exception_with_timeout(true, single_transition, top_level_state, 7).retrieveNow.force
+    command_exception_with_timeout(true, single_transition, top_level_state, 10).retrieveNow.force
   }
 
   def singleTransition(singTransition: Transition.T): String = {
@@ -566,12 +570,8 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val start_time = System.currentTimeMillis();
     println("[step] start_time: " + start_time)
 
-//    implicit val isabelle: Isabelle = new Isabelle(setup)
-//    val thy2: Theory = beginTheory(theoryStarter)
-//    println("[step] thy2.await")
-//    thy2.await
-//    println("[step] thy2 awaited")
-
+    val timeout_in_seconds = 1.max(timeout_in_millis / 1000) // Let the minimum timeout be 1 second.
+    val timeout_in_seconds = 7
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
@@ -580,7 +580,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
             println("[step] text: " + text)
-            tls_to_return = singleTransition(transition, tls_to_return)
+            tls_to_return = singleTransitionWithTimeout(transition, tls_to_return, timeout_in_seconds)
             // println("Applied transition successfully")
           }
       }
