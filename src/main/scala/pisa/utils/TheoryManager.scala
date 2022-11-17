@@ -31,7 +31,7 @@ class TheoryManager(var path_to_isa_bin: String, var wd : String) {
   implicit val isabelle: Isabelle = new Isabelle(setup)
   implicit val ec: ExecutionContext = ExecutionContext.global
 
-  val ommand_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] =
+  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] =
     compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
     "fn (int, tr, st) => Toplevel.command_exception int tr st")
   val init_toplevel: MLFunction0[ToplevelState] = compileFunction0[ToplevelState]("Toplevel.init_toplevel")
