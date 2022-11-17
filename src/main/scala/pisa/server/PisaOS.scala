@@ -88,7 +88,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
     """fn (int, tr, st) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
-      |  in Timeout.apply (Time.fromSeconds 10) go_run (int, tr, st) end""".stripMargin)
+      |  in Timeout.apply (Time.fromSeconds 9) go_run (int, tr, st) end""".stripMargin)
 //  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, ToplevelState, Int] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState, Int](
 //    """fn (int, tr, st, timeout) => let
 //      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
@@ -120,7 +120,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
       |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
       |          in (tr, implode this) :: addtext rest (nextTr::trs) end
       |  | in addtext (Symbol.explode text1) transitions end
-      |  in Timeout.apply (Time.fromSeconds 10) go_run (thy, text) end""".stripMargin)
+      |  in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
