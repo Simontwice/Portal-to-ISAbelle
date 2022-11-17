@@ -129,8 +129,8 @@ class IsaFlexEnv:
     def proceed_after(self, line_string):
         return self.post(f"<proceed after> {line_string}", forceTimeout=10000)
 
-    def clone_to_new_name(self, new_name):
-        return self.post(f"<clone> default <clone> {new_name}", forceTimeout=10)
+    def clone_to_new_name(self, old_name, new_name):
+        return self.post(f"<clone> {old_name} <clone> {new_name}", forceTimeout=10)
 
     @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
