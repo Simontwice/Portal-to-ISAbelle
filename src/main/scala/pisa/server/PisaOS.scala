@@ -106,18 +106,18 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //  val theory_of_state: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
 //  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
 //  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
-//  val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
-//    """fn (thy, text) => let
-//      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-//      |  fun addtext symbols [tr] =
-//      |        [(tr, implode symbols)]
-//      |    | addtext _ [] = []
-//      |    | addtext symbols (tr::nextTr::trs) = let
-//      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-//      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
-//      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
+      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
+      |  fun addtext symbols [tr] =
+      |        [(tr, implode symbols)]
+      |    | addtext _ [] = []
+      |    | addtext symbols (tr::nextTr::trs) = let
+      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
+      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
+  val parse_text_with_timeout: MLFunction3[Theory, String, Int, List[(Transition.T, String)]] = compileFunction[Theory, String, Int, List[(Transition.T, String)]](
+    """fn (thy, text, timeout) => let
          fun go_run (thy1, text1) = let
            val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
            fun addtext symbols [tr] = [(tr, implode symbols)]
@@ -126,7 +126,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
                  val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
                  in (tr, implode this) :: addtext rest (nextTr::trs) end
            in addtext (Symbol.explode text1) transitions end
-         in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""")
+         in Timeout.apply (Time.fromSeconds timeout) go_run (thy, text) end""")
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
@@ -482,7 +482,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var stateString = getStateString
     var proof_level_number = getProofLevel
     Breaks.breakable {
-      for ((transition, text) <- parse_text(thy1, isarString).force.retrieveNow)
+      for ((transition, text) <- parse_text_with_timeout(thy1, isarString, 10).force.retrieveNow)
         continue.breakable {
           if (text.trim.isEmpty) continue.break
           else if (text.trim == "sledgehammer") {
@@ -507,7 +507,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var parse_toplevel: ToplevelState = toplevel
     var stateString = getStateString(parse_toplevel)
     Breaks.breakable {
-      for ((transition, text) <- parse_text(thy1, isarString).force.retrieveNow)
+      for ((transition, text) <- parse_text_with_timeout(thy1, isarString, 10).force.retrieveNow)
         continue.breakable {
           println(stateString)
           println(text)
@@ -575,7 +575,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
-        for ((transition, text) <- parse_text(thy1, isar_string).force.retrieveNow)
+        for ((transition, text) <- parse_text_with_timeout(thy1, isar_string, 10).force.retrieveNow)
           continue.breakable {
             if (text.trim.isEmpty) continue.break
             // println("Small step: " + text)
@@ -651,7 +651,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var stateString: String = ""
     val continue = new Breaks
     Breaks.breakable {
-      for ((transition, text) <- parse_text(thy1, fileContent).force.retrieveNow) {
+      for ((transition, text) <- parse_text_with_timeout(thy1, fileContent, 10).force.retrieveNow) {
         continue.breakable {
           if (text.trim.isEmpty) continue.break
           val trimmed_text = text.trim.replaceAll("\n", " ").replaceAll(" +", " ")
