@@ -96,7 +96,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     """fn (int, tr, st) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
       |  in Timeout.apply (Time.fromSeconds 9) go_run (int, tr, st) end""".stripMargin)
-  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, ToplevelState, Int] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState, Int](
+  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, Int, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, Int, ToplevelState](
     """fn (int, tr, st, timeout) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
       |  in Timeout.apply (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
@@ -118,7 +118,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
-      |  fun go_run (thy1, text1) = let
+      |  fun go_run (thy1, text1) => let
       |  | val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
       |  | fun addtext symbols [tr] =
       |          [(tr, implode symbols)]
