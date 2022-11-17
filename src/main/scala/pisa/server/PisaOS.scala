@@ -1,20 +1,13 @@
 package pisa.server
 
-import util.control.Breaks
-import scala.collection.mutable.ListBuffer
 import _root_.java.nio.file.{Files, Path}
 import _root_.java.io.File
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{AdHocConverter, MLFunction, MLFunction0, MLFunction2, MLFunction3, MLFunction4, MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 import de.unruh.isabelle.pure.{Context, Position, Theory, TheoryHeader, ToplevelState}
 import pisa.utils.TheoryManager
 import pisa.utils.TheoryManager.{Ops, Source, Text}
-
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
-import scala.concurrent.duration.Duration
-
-import sys.process._
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -95,35 +88,39 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
     """fn (int, tr, st) => let
       |  fun go_run (a, b, c) = Toplevel.command_exception a b c
-      |  in Timeout.apply (Time.fromSeconds 3) go_run (int, tr, st) end""".stripMargin)
+      |  in Timeout.apply (Time.fromSeconds 10) go_run (int, tr, st) end""".stripMargin)
+//  val command_exception_with_timeout: MLFunction4[Boolean, Transition.T, ToplevelState, ToplevelState, Int] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState, Int](
+//    """fn (int, tr, st, timeout) => let
+//      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
+//      |  in Timeout.apply (Time.fromSeconds timeout) go_run (int, tr, st) end""".stripMargin)
   val command_errors: MLFunction3[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])] = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
   val toplevel_end_theory: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
 //  val theory_of_state: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
 //  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
 //  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
+//  val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
+//    """fn (thy, text) => let
+//      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
+//      |  fun addtext symbols [tr] =
+//      |        [(tr, implode symbols)]
+//      |    | addtext _ [] = []
+//      |    | addtext symbols (tr::nextTr::trs) = let
+//      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+//      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
+//      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
-      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-      |  fun addtext symbols [tr] =
-      |        [(tr, implode symbols)]
-      |    | addtext _ [] = []
-      |    | addtext symbols (tr::nextTr::trs) = let
-      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
-      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
-//  val parse_text: MLFunction2[(Theory, String), List[(Transition.T, String)]] = compileFunction[(Theory, String), List[(Transition.T, String)]](
-//    """fn (thy, text) => let
-//      |  fun go_run a b = let
-//      |  | val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-//      |  | fun addtext symbols [tr] =
-//      |          [(tr, implode symbols)]
-//      |      | addtext _ [] = []
-//      |      | addtext symbols (tr::nextTr::trs) = let
-//      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-//      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
-//      |  | in addtext (Symbol.explode text) transitions end
-//      |  in (Timeout.apply (Time.fromSeconds 3) go_run) (thy, text)""".stripMargin)
+      |  fun go_run (thy1, text1) = let
+      |  | val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
+      |  | fun addtext symbols [tr] =
+      |          [(tr, implode symbols)]
+      |      | addtext _ [] = []
+      |      | addtext symbols (tr::nextTr::trs) = let
+      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
+      |  | in addtext (Symbol.explode text1) transitions end
+      |  in Timeout.apply (Time.fromSeconds 10) go_run (thy, text) end""".stripMargin)
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
