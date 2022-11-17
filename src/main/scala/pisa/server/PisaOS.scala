@@ -1,5 +1,7 @@
 package pisa.server
 
+import util.control.Breaks
+import scala.collection.mutable.ListBuffer
 import _root_.java.nio.file.{Files, Path}
 import _root_.java.io.File
 import de.unruh.isabelle.control.Isabelle
@@ -8,6 +10,11 @@ import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, com
 import de.unruh.isabelle.pure.{Context, Position, Theory, TheoryHeader, ToplevelState}
 import pisa.utils.TheoryManager
 import pisa.utils.TheoryManager.{Ops, Source, Text}
+
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.duration.Duration
+
+import sys.process._
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
