@@ -449,7 +449,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def getProofLevel: Int = getProofLevel(toplevel)
 
   def singleTransitionWithTimeout(single_transition: Transition.T, top_level_state: ToplevelState, timeout: Int): ToplevelState = {
-    command_exception_with_timeout(true, single_transition, top_level_state, ).retrieveNow.force
+    command_exception_with_timeout(true, single_transition, top_level_state, timeout).retrieveNow.force
   }
 
   def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState): ToplevelState = {
