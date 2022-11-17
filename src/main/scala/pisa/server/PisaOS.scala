@@ -95,7 +95,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //  val context_of_state: MLFunction[ToplevelState, Context] = compileFunction[ToplevelState, Context]("Toplevel.context_of")
 //  val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
-    """fn (thy, text) => let
+    """Timeout.apply  (Time.fromSeconds 3) fn (thy, text) => let
       |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
       |  fun addtext symbols [tr] =
       |        [(tr, implode symbols)]
