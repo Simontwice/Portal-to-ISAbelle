@@ -118,16 +118,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 //      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
-      |  fun go_run (thy1, text1) => let
-      |  | val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
-      |  | fun addtext symbols [tr] =
-      |          [(tr, implode symbols)]
-      |      | addtext _ [] = []
-      |      | addtext symbols (tr::nextTr::trs) = let
-      |          val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-      |          in (tr, implode this) :: addtext rest (nextTr::trs) end
-      |  | in addtext (Symbol.explode text1) transitions end
-      |  in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
+         fun go_run (thy1, text1) = let
+           val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
+           fun addtext symbols [tr] = [(tr, implode symbols)]
+             | addtext _ [] = []
+             | addtext symbols (tr::nextTr::trs) = let
+                 val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+                 in (tr, implode this) :: addtext rest (nextTr::trs) end
+           in addtext (Symbol.explode text1) transitions end
+         in Timeout.apply (Time.fromSeconds 9) go_run (thy, text) end""".stripMargin)
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
@@ -450,7 +449,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   def getProofLevel: Int = getProofLevel(toplevel)
 
   def singleTransition(single_transition: Transition.T, top_level_state: ToplevelState): ToplevelState = {
-    command_exception(true, single_transition, top_level_state).retrieveNow.force
+    command_exception_with_timeout(true, single_transition, top_level_state, 7).retrieveNow.force
   }
 
   def singleTransition(singTransition: Transition.T): String = {
