@@ -2,6 +2,22 @@ import json
 import os
 import subprocess
 import time
+import sys
+conf_path = os.getcwd()
+
+upper=os.path.join( conf_path, '..' )
+upper2 = os.path.join( upper, '..' )
+upper3 = os.path.join( upper2, '..' )
+upper4 = os.path.join( upper3, '..' )
+upper5 = os.path.join( upper4, '..' )
+
+sys.path.append(conf_path)
+sys.path.append(upper)
+sys.path.append(upper2)
+sys.path.append(upper3)
+sys.path.append(upper4)
+sys.path.append(upper5)
+
 
 from absl import logging
 
