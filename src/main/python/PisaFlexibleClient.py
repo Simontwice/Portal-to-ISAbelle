@@ -288,6 +288,7 @@ class IsaFlexEnv:
                   "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
+                        print(f"FAILURE: {next_proof_state_clean}, pisa_name: {pisa_name}, premise: {premise}")
                         step_correct = False
                         break
 
