@@ -181,6 +181,81 @@ class IsaFlexEnv:
 
         return processed_global
 
+    def translate_premise_names_to_pisa_names_by_method(self, isabelle_state, premises_names: List[str]):
+        premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
+        # To original names, before translation.
+        method_name_to_premises_names_available: Dict[str, List[str]] = defaultdict(list)
+        unsuccessful_premises_names: List[str] = []
+        for premise in premises_names:
+            possible_premise_names = []
+            suffix = premise.split("_")[-1]
+            prefix = premise.rsplit("_", 1)[0]
+
+            if suffix.isdigit():
+                premise_alternative = f"{prefix}({suffix})"
+                possible_premise_names.append(premise_alternative)
+                possible_premise_names.append(premise)
+            else:
+                possible_premise_names.append(premise)
+
+            isa_steps = [f"using {x}" for x in possible_premise_names]
+            step_successful = False
+
+            for step in isa_steps:
+                next_proof_state, _, done, _ = self.step_to_top_level_state(
+                    step,
+                    isabelle_state.proof_state_id,
+                    -1,
+                )
+
+                next_proof_state_clean = trim_string_optional(next_proof_state)
+                step_correct = True
+                for prefix_error in [
+                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+                ]:
+                    if prefix_error in next_proof_state_clean:
+                        step_correct = False
+                        break
+
+                if step_correct:
+                    pisa_name = step.split()[-1]
+                    premise_name_to_pisa_names[premise].append(pisa_name)
+                    step_successful = True
+
+                    for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp add", "by (simp add: ")]:
+                        logging.info(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
+                        step = method + pisa_name + ")"
+                        logging.info(f"step: {step}")
+                        next_proof_state, _, done, _ = self.step_to_top_level_state(
+                            step,
+                            isabelle_state.proof_state_id,
+                            -1,
+                        )
+                        logging.info(f"next_proof_state: {next_proof_state}")
+                        if next_proof_state is None:
+                            continue
+
+                        next_proof_state_clean = trim_string_optional(next_proof_state)
+                        step_correct = True
+                        for prefix_error in ["Step error: Undefined fact", "Step error: Bad fact", "Step error: Failed to apply", "Step error: Bad arguments"]:
+                            if prefix_error in next_proof_state_clean:
+                                step_correct = False
+                                break
+                        if step_correct:
+                            method_name_to_premises_names_available[method_name].append(premise)
+
+                    os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+                    os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
+            if not step_successful:
+                unsuccessful_premises_names.append(premise)
+
+        return premise_name_to_pisa_names, method_name_to_premises_names_available, unsuccessful_premises_names
+
+
     def translate_premise_names_to_pisa_names(self, isabelle_state, premises_names: List[str]):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
         unsuccessful_premises_names: List[str] = []
@@ -308,7 +383,7 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact"
+                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
