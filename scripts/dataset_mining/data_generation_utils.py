@@ -39,7 +39,7 @@ def process_match2(match2_all):
     else:
         result = []
         for match2 in match2_all:
-            split = match2.split("(-)")
+            split = re.split("\(|\-|\)", match2)
             split = list(filter(lambda x: x != "", split))
             name, numbers = split[0], split[1:]
 
@@ -58,7 +58,7 @@ def process_match3(match3_all):
     else:
         result = []
         for match3 in match3_all:
-            split = match3.split("(,)")
+            split = re.split("\(|\,|\)", match3)
             split = list(filter(lambda x: x != "", split))
             name, numbers = split[0], split[1:]
 
