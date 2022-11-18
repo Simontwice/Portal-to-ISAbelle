@@ -208,11 +208,13 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
+                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                     "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
+                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
                         step_correct = False
                         break
 
@@ -283,12 +285,13 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
+                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                   "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
-                        print(f"FAILURE: {next_proof_state_clean}, pisa_name: {pisa_name}, premise: {premise}")
+                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
                         step_correct = False
                         break
 
