@@ -207,8 +207,7 @@ class DataIsaJob:
         environemnt_success = False
         failure_counter = 0
         while not environemnt_success and failure_counter <= 3:
-            if time.time()-start_time_single>300:
-                return None, None
+
             print("starting the server")
             print("checking filesystem health")
             os.system("df -h")
@@ -272,6 +271,8 @@ class DataIsaJob:
                 )
                 sbt_ready = False
                 environemnt_success = False
+                if time.time() - start_time_single > 300:
+                    return None, None
         if not environemnt_success:
             print("environment still cannot be initialized")
             print(
