@@ -118,7 +118,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
 
   def deal_with_apply_to_tls(toplevel_state_name: String, action: String, new_name: String): String = {
     if (pisaos.top_level_state_map.contains(toplevel_state_name)) {
-      var actual_timeout = 10000
+      var actual_timeout = 40000
       val old_state: ToplevelState = pisaos.retrieve_tls(toplevel_state_name)
       var actual_step: String = "Gibberish"
 
