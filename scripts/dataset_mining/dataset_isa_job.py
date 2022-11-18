@@ -223,7 +223,7 @@ class DataIsaJob:
             while not sbt_ready:
                 print(f"time from start: {time.time() - start_time_single}")
                 time.sleep(1)
-                if time.time() - start_time_single > 25:
+                if time.time() - start_time_single > 180:
                     try:
                         parent = psutil.Process(pid)
                         children = parent.children(recursive=True)
@@ -296,7 +296,7 @@ class DataIsaJob:
                 )
                 sbt_ready = False
                 environemnt_success = False
-                if time.time() - start_time_single > 25:
+                if time.time() - start_time_single > 180:
                     return None, None
         if not environemnt_success:
             print("environment still cannot be initialized")
