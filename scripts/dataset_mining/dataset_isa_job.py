@@ -221,6 +221,27 @@ class DataIsaJob:
             )
             pid = sub.pid
             while not sbt_ready:
+                if time.time() - start_time_single > 300:
+                    try:
+                        parent = psutil.Process(pid)
+                        children = parent.children(recursive=True)
+                        for process in children:
+                            process.send_signal(signal.SIGTERM)
+                        parent.send_signal(signal.SIGTERM)
+                    except psutil.NoSuchProcess:
+                        pass
+                    # delete sbt ready txt
+                    os.system("rm sbt_ready.txt")
+                    os.system(
+                        "ps aux | grep Isabelle | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+                    )
+                    os.system(
+                        "ps aux | grep poly | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+                    )
+                    os.system(
+                        "ps aux | grep sbt | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+                    )
+                    return None, None
                 if os.path.exists("sbt_ready.txt"):
                     with open("sbt_ready.txt", "r") as f:
                         file_content = f.read()
