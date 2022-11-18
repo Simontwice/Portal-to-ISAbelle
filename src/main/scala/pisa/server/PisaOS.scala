@@ -450,6 +450,12 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     command_exception_with_timeout(true, single_transition, top_level_state, 10).retrieveNow.force
   }
 
+  def singleTransitionWithTimeout(singTransition: Transition.T, timeout: Int): String = {
+    //    TODO: inlcude global facts
+    toplevel = singleTransitionWithTimeout(singTransition, toplevel, timeout)
+    getStateString
+  }
+
   def singleTransition(singTransition: Transition.T): String = {
     //    TODO: inlcude global facts
     toplevel = singleTransition(singTransition, toplevel)
@@ -644,15 +650,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     var stateString: String = ""
     val continue = new Breaks
     Breaks.breakable {
-      for ((transition, text) <- parse_text_with_timeout(thy1, fileContent, 10).force.retrieveNow) {
+      for ((transition, text) <- parse_text_with_timeout(thy1, fileContent, 60).force.retrieveNow) {
         continue.breakable {
           if (text.trim.isEmpty) continue.break
           val trimmed_text = text.trim.replaceAll("\n", " ").replaceAll(" +", " ")
           if (trimmed_text == isar_string) {
-            if (after) stateString = singleTransition(transition)
+            if (after) stateString = singleTransitionWithTimeout(transition, 60)
             return stateString
           }
-          stateString = singleTransition(transition)
+          stateString = singleTransitionWithTimeout(transition, 60)
         }
       }
     }
