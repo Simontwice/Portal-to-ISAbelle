@@ -139,8 +139,8 @@ class IsaInstance:
 class DataIsaJob:
     def __init__(
         self,
-        theory_file_path="~/afp-2021-10-22/thys/Pop_Refinement/Future_Work.thy",
-        isa_path="~/Isabelle2021",
+        theory_file_path="/home/szymon/afp-2021-10-22/thys/Sigma_Commit_Crypto/Pedersen.thy",
+        isa_path="/home/szymon/Isabelle2021",
         out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
         metadata_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_metadata_log_dev",
@@ -254,3 +254,6 @@ class DataIsaJob:
             print("env init successful!")
             assert isa_instance.env is not None
             return isa_instance.env, pid
+
+job= DataIsaJob()
+job.execute()

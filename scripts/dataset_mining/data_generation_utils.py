@@ -13,6 +13,7 @@ def get_relative_path(theory_file_path):
     return prefix + "/".join(absolute_path[idx + 1 :]).split(".")[0], prefix
 
 def extract_assumption_names(statement):
+    assert type(statement)==str, f"supplied type of statement: {statement} is not str!"
     no_ML = re.sub('".+?"', " ", statement)
 
     # escape special characters
@@ -26,6 +27,9 @@ def extract_assumption_names(statement):
 
     match_assumes = [re.sub("(assumes )|:"," ",m).strip() for m in match_assumes]
     match_and = [re.sub("(and )|:"," ",m).strip() for m in match_and]
+    # if "assumes " in statement:
+    #     print(f"statement with asms: {statement}")
+    #     breakpoint()
 
     return match_assumes+match_and
 
@@ -36,7 +40,7 @@ def process_match2(match2_all):
         result = []
         for match2 in match2_all:
             split = match2.split("(-)")
-            split = list(filter(lambda x: x is not "", split))
+            split = list(filter(lambda x: x != "", split))
             name, numbers = split[0], split[1:]
 
             low = int(numbers[0])
@@ -55,7 +59,7 @@ def process_match3(match3_all):
         result = []
         for match3 in match3_all:
             split = match3.split("(,)")
-            split = list(filter(lambda x: x is not "", split))
+            split = list(filter(lambda x: x != "", split))
             name, numbers = split[0], split[1:]
 
             assert all(
@@ -85,26 +89,28 @@ def fish_out_actual_premise_names(step):
     match2 = process_match2(match2)
     match3 = process_match3(match3)
 
-    special_matches = [match for match in [match1, match2, match3] if match is not []]
+    special_matches = [match for match in [match1, match2, match3] if match != []]
     num_of_special_matches = len(special_matches)
     if num_of_special_matches > 1:
         print(
             f"component {step} matched more than 1 form of numbered premises! Such as: simps(1), simps(1,4), simps(2-5)!"
         )
+        # breakpoint()
 
     result = []
     if num_of_special_matches == 0:
         # it is a normal name
-        if match0 is not []:
+        if match0 != []:
             result = [match0[0]]
         else:
             result = []
     else:
-        result = [special_matches[0]]
+        result = special_matches[0]
 
     assert type(result)==list
     if len(result)>0:
-        assert type(result[0])==str
+        if not type(result[0])==str:
+            pass
     return result
 
 
@@ -245,6 +251,12 @@ def match_premise_and_facts_w_statements(premise, fact_dict):
     else:
         return []
 
+def match_named_premise_w_statements(named_premise, fact_dict):
+    premises = [named_premise]+[f"{named_premise}(n)" for n in range(15)]
+    result = []
+    for premise in premises:
+        result += match_premise_and_facts_w_statements(premise, fact_dict)
+    return result
 
 def process_raw_thm_deps(raw_thm_deps):
     all_thm_deps = {}

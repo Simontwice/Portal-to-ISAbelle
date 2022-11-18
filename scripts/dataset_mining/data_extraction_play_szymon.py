@@ -13,7 +13,7 @@ from data_generation_utils import (
     match_premise_and_facts_w_statements,
     split_over_suffixes,
     auxiliary_simp_metis_smt_meson_matches,
-    get_relative_path, extract_assumption_names
+    get_relative_path, extract_assumption_names, match_named_premise_w_statements
 )
 
 thm_deps_step = 0
@@ -56,16 +56,17 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
         # files this short do not concern us
         return file_processing_info
 
+    current_proof = {"statement": None, "transitions": [], "local_facts": {}, "assumptions": {},
+                     "named_assumptions": {}}
+    current_proof_sledgehammer = {
+        "statement": None,
+        "transitions": [],
+        "local_facts": {},
+        "assumptions": {},
+        "named_assumptions": {},
+    }
+
     for step_num, step in enumerate(all_steps):
-        if not proof_open:
-            current_proof = {"statement": None, "transitions": [], "local_facts": {}, "assumptions": {}, "named_assumptions":{}}
-            current_proof_sledgehammer = {
-                "statement": None,
-                "transitions": [],
-                "local_facts": {},
-                "assumptions": {},
-                "named_assumptions":{},
-            }
         global thm_deps_step
         if step.startswith(
             "context "
@@ -88,9 +89,9 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                 }
             )
 
-            env.clone_to_new_name("default", "prev default")
-            prev_proof_level = proof_level
-            prev_state = state
+        env.clone_to_new_name("default", "prev default")
+        prev_proof_level = proof_level
+        prev_state = state
         ######################################################## STEP ##################################################
         try:
             start = time.time()
@@ -110,32 +111,16 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             file_processing_info["step_failed_info"] = (step_num, (step, len(all_steps)))
             return file_processing_info
 
-        ################################################## LOCAL FACTS #################################################
         proof_level = int(env.get_proof_level("default"))
         finished_subproof = proof_level < prev_proof_level
 
-        if finished_subproof and proof_level == 0:
-            local_facts = env.dataset_extraction_local_facts(isabelle_state="prev default")
-            local_facts_accelerated = split_over_suffixes(local_facts)
-            statement = current_proof_sledgehammer["statement"]
-            named_assumptions = extract_assumption_names(statement)
-            current_proof["local_facts"] = local_facts
-            current_proof_sledgehammer["local_facts"] = local_facts
-            assms = {
-                name: statement for name, statement in local_facts.items() if "assms" in name
-            }
-            named_assumptions_dict = dict(sum([match_premise_and_facts_w_statements(premise, local_facts_accelerated) for premise in named_assumptions],[]))
-            current_proof["assumptions"] = assms
-            current_proof["named_assumptions"] = named_assumptions_dict
-            current_proof_sledgehammer["assumptions"] = assms
-            current_proof_sledgehammer["named_assumptions"] = named_assumptions_dict
         ############################################### SLEDGEHAMMER STEP ##############################################
 
         if finished_subproof:
             # SH step time
-            state_sh = ""#TODO:revert rew, done, _ = env.step_to_top_level_state(
-            #     "sledgehammer", "prev default", "sh_default"
-            # )
+            state_sh, rew, done, _ = env.step_to_top_level_state(
+                "sledgehammer", "prev default", "sh_default"
+            )
 
             os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
@@ -166,6 +151,7 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             # means we just started the proof, this step was the lemma statement
             if proof_level > 0:
                 proof_open = True
+                assert current_proof["statement"] is None
                 current_proof["statement"] = step
                 current_proof_sledgehammer["statement"] = step
                 raw_statement_for_thm_deps = step
@@ -173,6 +159,25 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             if proof_level == 0:
                 thm_deps_step += 1
                 proof_open = False
+                ################################################## LOCAL FACTS #################################################
+
+                local_facts = env.dataset_extraction_local_facts(isabelle_state="prev default")
+                local_facts_accelerated = split_over_suffixes(local_facts)
+                statement = current_proof["statement"]
+                named_assumptions = extract_assumption_names(str(statement))
+                current_proof["local_facts"] = {**current_proof["local_facts"], **local_facts}
+                current_proof_sledgehammer["local_facts"] = {**current_proof_sledgehammer["local_facts"],
+                                                             **local_facts}
+                assms = {
+                    name: statement for name, statement in local_facts.items() if "assms" in name
+                }
+                named_assumptions_dict = dict(
+                    sum([match_named_premise_w_statements(premise, local_facts_accelerated) for premise in
+                         named_assumptions], []))
+                current_proof["assumptions"] = assms
+                current_proof["named_assumptions"] = named_assumptions_dict
+                current_proof_sledgehammer["assumptions"] = assms
+                current_proof_sledgehammer["named_assumptions"] = named_assumptions_dict
 
                 ################################################## THM DEPS ############################################
                 logging.info(f"Trying to extract thm_deps")
@@ -216,6 +221,16 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
                 sledgehammer_proofs.append(current_proof_sledgehammer)
                 del current_proof
                 del current_proof_sledgehammer
+
+                current_proof = {"statement": None, "transitions": [], "local_facts": {}, "assumptions": {}, "named_assumptions":{}}
+                current_proof_sledgehammer = {
+                    "statement": None,
+                    "transitions": [],
+                    "local_facts": {},
+                    "assumptions": {},
+                    "named_assumptions":{},
+                }
+
         if (
             len(all_steps) - step_num == 5
         ):  # if we're near the end, call global facts. When called at the very end, it often fails
@@ -273,7 +288,6 @@ def single_file_to_data_play_szymon(theory_file_path, out_dir, error_log_dir, me
             sh_transition["premises"] = dict(set(sh_transition["premises"]))
 
     ########################################### AND WRITE TO FILE #####################################
-
     with open(f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w") as fp:
         json.dump(proofs, fp, indent=2)
 

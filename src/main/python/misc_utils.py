@@ -12,7 +12,7 @@ def is_sus(premise_name):
     return premise_name.split("_")[-1].isdigit()
 
 def process_raw_facts(raw_string):
-    if raw_string == "":
+    if raw_string == "" or raw_string =="failed":
         return {}
     if (
             raw_string
