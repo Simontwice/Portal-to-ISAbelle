@@ -222,7 +222,7 @@ class IsaFlexEnv:
                     premise_name_to_pisa_names[premise].append(pisa_name)
                     step_successful = True
 
-                    for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp add", "by (simp add: ")]:
+                    for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp", "by (simp add: ")]:
                         logging.info(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
                         step = method + pisa_name + ")"
                         logging.info(f"step: {step}")
