@@ -177,6 +177,7 @@ class DataIsaJob:
                     f'{self.failed_files_dir}/{"_".join(self.theory_file_path.split("/")[-3:])}.json', "w"
             ) as fp:
                 json.dump({}, fp)
+            return
 
         single_file_on_single_worker(
             self.theory_file_path,
