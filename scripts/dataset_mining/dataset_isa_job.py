@@ -155,7 +155,7 @@ class IsaInstance:
 class DataIsaJob:
     def __init__(
         self,
-        theory_file_path="/home/szymon/afp-2021-10-22/thys/Sigma_Commit_Crypto/Pedersen.thy",
+        theory_file_path="/home/szymon/afp-2021-10-22/thys/Transition_Systems_and_Automata/Automata/DRA/DRA.thy",
         isa_path="/home/szymon/Isabelle2021",
         out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
@@ -221,7 +221,9 @@ class DataIsaJob:
             )
             pid = sub.pid
             while not sbt_ready:
-                if time.time() - start_time_single > 300:
+                print(f"time from start: {time.time() - start_time_single}")
+                time.sleep(1)
+                if time.time() - start_time_single > 25:
                     try:
                         parent = psutil.Process(pid)
                         children = parent.children(recursive=True)
@@ -266,6 +268,8 @@ class DataIsaJob:
                     )
                     print("escaping the while loop")
                     environemnt_success = True
+                else:
+                    failure_counter += 1
 
             except Exception as e:
                 print(f"During init an exception occured. Exception text: {e}")
@@ -292,7 +296,7 @@ class DataIsaJob:
                 )
                 sbt_ready = False
                 environemnt_success = False
-                if time.time() - start_time_single > 300:
+                if time.time() - start_time_single > 25:
                     return None, None
         if not environemnt_success:
             print("environment still cannot be initialized")
