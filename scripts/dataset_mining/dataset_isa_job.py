@@ -160,15 +160,24 @@ class DataIsaJob:
         out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
         metadata_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_metadata_log_dev",
+        failed_files_dir="gs://n2formal-public-data-europe/simontwice_data/not_initialised_files"
     ):
         self.theory_file_path = theory_file_path
         self.isa_path = os.path.expanduser(isa_path)
         self.out_dir = out_dir
         self.error_log_dir = error_log_dir
         self.metadata_log_dir = metadata_log_dir
+        self.failed_files_dir = failed_files_dir
         self.initialised_isa_env, self.isa_pid = self.rev_up_Isabelle_env()
 
     def execute(self):
+
+        if self.initialised_isa_env is None:
+            with open(
+                    f'{self.failed_files_dir}/{"_".join(self.theory_file_path.split("/")[-3:])}.json', "w"
+            ) as fp:
+                json.dump({}, fp)
+
         single_file_on_single_worker(
             self.theory_file_path,
             self.initialised_isa_env,
@@ -197,6 +206,8 @@ class DataIsaJob:
         environemnt_success = False
         failure_counter = 0
         while not environemnt_success and failure_counter <= 3:
+            if time.time()-start_time_single>300:
+                return None, None
             print("starting the server")
             print("checking filesystem health")
             os.system("df -h")
