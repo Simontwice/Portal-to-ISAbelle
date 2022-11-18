@@ -87,7 +87,9 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val proof_level: MLFunction[ToplevelState, Int] = compileFunction[ToplevelState, Int]("Toplevel.level")
   val proof_of: MLFunction[ToplevelState, ProofState.T] = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
   val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-    "fn (int, tr, st) => Toplevel.command_exception int tr st")
+    """fn (int, tr, st) => let
+      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
+      |  in Timeout.apply (Time.fromSeconds 60) go_run (int, tr, st) end""".stripMargin)
   val command_errors: MLFunction3[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])] = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
   val toplevel_end_theory: MLFunction[ToplevelState, Theory] = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
@@ -96,14 +98,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val name_of_transition: MLFunction[Transition.T, String] = compileFunction[Transition.T, String]("Toplevel.name_of")
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
-      |  val transitions = Outer_Syntax.parse_text thy (K thy) Position.start text
-      |  fun addtext symbols [tr] =
-      |        [(tr, implode symbols)]
-      |    | addtext _ [] = []
-      |    | addtext symbols (tr::nextTr::trs) = let
-      |        val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
-      |        in (tr, implode this) :: addtext rest (nextTr::trs) end
-      |  in addtext (Symbol.explode text) transitions end""".stripMargin)
+       fun go_run (thy1, text1) = let
+         val transitions = Outer_Syntax.parse_text thy1 (K thy1) Position.start text1
+         fun addtext symbols [tr] = [(tr, implode symbols)]
+           | addtext _ [] = []
+           | addtext symbols (tr::nextTr::trs) = let
+               val (this,rest) = Library.chop (Position.distance_of (Toplevel.pos_of tr, Toplevel.pos_of nextTr) |> Option.valOf) symbols
+               in (tr, implode this) :: addtext rest (nextTr::trs) end
+         in addtext (Symbol.explode text1) transitions end
+       in Timeout.apply (Time.fromSeconds 60) go_run (thy, text) end""")
   val theoryName: MLFunction2[Boolean, Theory, String] = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
   val ancestorsNamesOfTheory: MLFunction[Theory, List[String]] = compileFunction[Theory, List[String]](
@@ -570,7 +573,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
           }
       }
     }
-    Await.result(f_st, Duration(timeout_in_millis, "millis"))
+    Await.result(f_st, Duration.Inf)
     // println("Did step successfully")
     tls_to_return
   }
@@ -598,7 +601,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     val f_res: Future[(Boolean, List[String])] = Future.apply {
       prove_with_Sledgehammer(top_level_state).force.retrieveNow
     }
-    Await.result(f_res, Duration(timeout_in_millis, "millis"))
+    Await.result(f_res, Duration.Inf)
   }
 
   def exp_with_hammer(top_level_state: ToplevelState, timeout_in_millis: Int = 35000): (Boolean, List[String]) = {
@@ -606,7 +609,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
       val first_result = exp_with_Sledgehammer(top_level_state, thy1).force.retrieveNow
       (first_result._1, first_result._2._2)
     }
-    Await.result(f_res, Duration(timeout_in_millis, "millis"))
+    Await.result(f_res, Duration.Inf)
   }
   println("Checkpoint 13")
   val transitions_and_texts = parse_text(thy1, fileContent).force.retrieveNow
