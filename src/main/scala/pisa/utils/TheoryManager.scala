@@ -31,9 +31,10 @@ class TheoryManager(var path_to_isa_bin: String, var wd : String) {
   implicit val isabelle: Isabelle = new Isabelle(setup)
   implicit val ec: ExecutionContext = ExecutionContext.global
 
-  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] =
-    compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
-    "fn (int, tr, st) => Toplevel.command_exception int tr st")
+  val command_exception: MLFunction3[Boolean, Transition.T, ToplevelState, ToplevelState] = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
+    """fn (int, tr, st) => let
+      |  fun go_run (a, b, c) = Toplevel.command_exception a b c
+      |  in Timeout.apply (Time.fromSeconds 60) go_run (int, tr, st) end""".stripMargin)
   val init_toplevel: MLFunction0[ToplevelState] = compileFunction0[ToplevelState]("Toplevel.init_toplevel")
   val parse_text: MLFunction2[Theory, String, List[(Transition.T, String)]] =
     compileFunction[Theory, String, List[(Transition.T, String)]](
