@@ -144,7 +144,7 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   val global_facts_and_defs: MLFunction[ToplevelState, List[(String, String)]] =
     compileFunction[ToplevelState, List[(String, String)]](
       """fn tls =>
-        | map (fn tup => (#1 tup, Pretty.unformatted_string_of (Element.pretty_statement (Toplevel.context_of tls) "test" (#2 tup))))
+        | map (fn tup => (#1 tup, Pretty.unformatted_string_of (Element.pretty_statement (Toplevel.context_of tls) "" (#2 tup))))
         | (Global_Theory.all_thms_of (Proof_Context.theory_of (Toplevel.context_of tls)) false)
         """.stripMargin
     )
