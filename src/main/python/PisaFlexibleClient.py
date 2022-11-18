@@ -210,7 +210,7 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact"
+                  "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
@@ -255,7 +255,7 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact"
+                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
