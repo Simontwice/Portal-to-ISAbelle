@@ -298,6 +298,7 @@ class IsaFlexEnv:
                 if step_correct:
                     pisa_name = step.split()[-1]
                     pisa_name = pisa_name[1:-1] # Remove quotes
+                    print(f"pisa_name: {pisa_name}, premise: {premise}")
                     premise_name_to_pisa_names[premise].append(pisa_name)
                     step_successful = True
             if not step_successful:
