@@ -209,7 +209,6 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                     "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
@@ -233,13 +232,12 @@ class IsaFlexEnv:
                             isabelle_state.proof_state_id,
                             -1,
                         )
-                        print(f"next_proof_state: {next_proof_state}")
                         if next_proof_state is None:
                             continue
 
                         next_proof_state_clean = trim_string_optional(next_proof_state)
                         step_correct = True
-                        for prefix_error in ["Step error: Undefined fact", "Step error: Bad fact", "Step error: Failed to apply", "Step error: Bad arguments"]:
+                        for prefix_error in ["Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact", "Step error: Failed to apply", "Step error: Bad arguments"]:
                             if prefix_error in next_proof_state_clean:
                                 step_correct = False
                                 break
@@ -285,7 +283,6 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                   "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
