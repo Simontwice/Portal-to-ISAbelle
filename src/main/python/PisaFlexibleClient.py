@@ -209,11 +209,13 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
+                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                     "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
+                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
                         step_correct = False
                         break
 
@@ -223,15 +225,15 @@ class IsaFlexEnv:
                     step_successful = True
 
                     for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp", "by (simp add: ")]:
-                        logging.info(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
+                        print(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
                         step = method + pisa_name + ")"
-                        logging.info(f"step: {step}")
+                        print(f"step: {step}")
                         next_proof_state, _, done, _ = self.step_to_top_level_state(
                             step,
                             isabelle_state.proof_state_id,
                             -1,
                         )
-                        logging.info(f"next_proof_state: {next_proof_state}")
+                        print(f"next_proof_state: {next_proof_state}")
                         if next_proof_state is None:
                             continue
 
@@ -283,11 +285,13 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
+                print(f"next_proof_state_clean: {next_proof_state_clean}")
                 step_correct = True
                 for prefix_error in [
                   "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
                 ]:
                     if prefix_error in next_proof_state_clean:
+                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
                         step_correct = False
                         break
 
@@ -301,103 +305,103 @@ class IsaFlexEnv:
         return premise_name_to_pisa_names, unsuccessful_premises_names
 
 
-    def translate_premise_names_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
-        premise_id_to_names_translated: Dict[int, List[str]] = defaultdict(list)
-        unsuccessful_premises_ids: List[int] = []
-
-        for premise_id, premise in premise_id_to_name.items():
-            possible_premise_names = []
-            suffix = premise.split("_")[-1]
-            prefix = premise.rsplit("_", 1)[0]
-
-            if suffix.isdigit():
-                premise_alternative = f"{prefix}({suffix})"
-                possible_premise_names.append(premise_alternative)
-                possible_premise_names.append(premise)
-            else:
-                possible_premise_names.append(premise)
-
-            isa_steps = [f"using {premise}" for premise in possible_premise_names]
-            step_successful = False
-
-            for step in isa_steps:
-                next_proof_state, _, done, _ = self.step_to_top_level_state(
-                    step,
-                    isabelle_state.proof_state_id,
-                    -1,
-                )
-
-                next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = True
-                for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
-                ]:
-                    if prefix_error in next_proof_state_clean:
-                        step_correct = False
-                        break
-
-                if step_correct:
-                    premise_id_to_names_translated[premise_id].append(step.split()[-1])
-                    step_successful = True
-            if not step_successful:
-                unsuccessful_premises_ids.append(premise_id)
-
-        return premise_id_to_names_translated, unsuccessful_premises_ids
-
-    def translate_premise_names(self, isabelle_state, premise_names: List[str]):
-        """
-
-        Args:
-            premise_names: list of premise names, some of them of the form *_{n} for some natural n >= 1
-
-        Returns:
-            a corrected list of the names, where each of the names is validated to be visible in the env. Some _{n} are transformed to (n), as appropriate.
-            It is possible that both _{n} and (n) are returned for some names.
-
-        """
-        successful_steps: List[str] = []
-        unsuccessful_premises: List[str] = []
-
-        for premise in premise_names:
-            possible_premise_names = []
-            suffix = premise.split("_")[-1]
-            prefix = premise.rsplit("_", 1)[0]
-
-            if suffix.isdigit():
-                premise_alternative = f"{prefix}({suffix})"
-                possible_premise_names.append(premise_alternative)
-                possible_premise_names.append(premise)
-            else:
-                possible_premise_names.append(premise)
-
-            isa_steps = [f"using {premise}" for premise in possible_premise_names]
-            step_successful = False
-
-            for step in isa_steps:
-                next_proof_state, _, done, _ = self.step_to_top_level_state(
-                    step,
-                    isabelle_state.proof_state_id,
-                    -1,
-                )
-
-                next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = True
-                for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
-                ]:
-                    if prefix_error in next_proof_state_clean:
-                        step_correct = False
-                        break
-
-                if step_correct:
-                    successful_steps.append(step)
-                    step_successful = True
-            if not step_successful:
-                unsuccessful_premises.append(premise)
-
-
-        translated_premises = [step.split()[-1] for step in successful_steps]
-        return translated_premises, unsuccessful_premises
+    # def translate_premise_names_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
+    #     premise_id_to_names_translated: Dict[int, List[str]] = defaultdict(list)
+    #     unsuccessful_premises_ids: List[int] = []
+    #
+    #     for premise_id, premise in premise_id_to_name.items():
+    #         possible_premise_names = []
+    #         suffix = premise.split("_")[-1]
+    #         prefix = premise.rsplit("_", 1)[0]
+    #
+    #         if suffix.isdigit():
+    #             premise_alternative = f"{prefix}({suffix})"
+    #             possible_premise_names.append(premise_alternative)
+    #             possible_premise_names.append(premise)
+    #         else:
+    #             possible_premise_names.append(premise)
+    #
+    #         isa_steps = [f"using {premise}" for premise in possible_premise_names]
+    #         step_successful = False
+    #
+    #         for step in isa_steps:
+    #             next_proof_state, _, done, _ = self.step_to_top_level_state(
+    #                 step,
+    #                 isabelle_state.proof_state_id,
+    #                 -1,
+    #             )
+    #
+    #             next_proof_state_clean = trim_string_optional(next_proof_state)
+    #             step_correct = True
+    #             for prefix_error in [
+    #                 "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+    #             ]:
+    #                 if prefix_error in next_proof_state_clean:
+    #                     step_correct = False
+    #                     break
+    #
+    #             if step_correct:
+    #                 premise_id_to_names_translated[premise_id].append(step.split()[-1])
+    #                 step_successful = True
+    #         if not step_successful:
+    #             unsuccessful_premises_ids.append(premise_id)
+    #
+    #     return premise_id_to_names_translated, unsuccessful_premises_ids
+    #
+    # def translate_premise_names(self, isabelle_state, premise_names: List[str]):
+    #     """
+    #
+    #     Args:
+    #         premise_names: list of premise names, some of them of the form *_{n} for some natural n >= 1
+    #
+    #     Returns:
+    #         a corrected list of the names, where each of the names is validated to be visible in the env. Some _{n} are transformed to (n), as appropriate.
+    #         It is possible that both _{n} and (n) are returned for some names.
+    #
+    #     """
+    #     successful_steps: List[str] = []
+    #     unsuccessful_premises: List[str] = []
+    #
+    #     for premise in premise_names:
+    #         possible_premise_names = []
+    #         suffix = premise.split("_")[-1]
+    #         prefix = premise.rsplit("_", 1)[0]
+    #
+    #         if suffix.isdigit():
+    #             premise_alternative = f"{prefix}({suffix})"
+    #             possible_premise_names.append(premise_alternative)
+    #             possible_premise_names.append(premise)
+    #         else:
+    #             possible_premise_names.append(premise)
+    #
+    #         isa_steps = [f"using {premise}" for premise in possible_premise_names]
+    #         step_successful = False
+    #
+    #         for step in isa_steps:
+    #             next_proof_state, _, done, _ = self.step_to_top_level_state(
+    #                 step,
+    #                 isabelle_state.proof_state_id,
+    #                 -1,
+    #             )
+    #
+    #             next_proof_state_clean = trim_string_optional(next_proof_state)
+    #             step_correct = True
+    #             for prefix_error in [
+    #                 "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+    #             ]:
+    #                 if prefix_error in next_proof_state_clean:
+    #                     step_correct = False
+    #                     break
+    #
+    #             if step_correct:
+    #                 successful_steps.append(step)
+    #                 step_successful = True
+    #         if not step_successful:
+    #             unsuccessful_premises.append(premise)
+    #
+    #
+    #     translated_premises = [step.split()[-1] for step in successful_steps]
+    #     return translated_premises, unsuccessful_premises
 
     @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
