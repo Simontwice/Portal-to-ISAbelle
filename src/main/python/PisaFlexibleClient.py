@@ -6,7 +6,6 @@ from collections import defaultdict
 import grpc
 from absl import logging
 
-from func_timeout import func_set_timeout, FunctionTimedOut
 from typing import List
 
 from pisa.src.main.python import server_pb2, server_pb2_grpc
@@ -125,7 +124,6 @@ class IsaFlexEnv:
             print(e)
         return self.obs_string
 
-    @func_set_timeout(1800, allowOverride=True)
     def step_to_top_level_state(self, action, tls_name, new_name):
         obs_string = "Step error"
         done = False
@@ -151,7 +149,6 @@ class IsaFlexEnv:
     def get_proof_level(self,tls_name="default"):
         return self.post(f"<get_proof_level> {tls_name}")
 
-    @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
 
@@ -186,8 +183,9 @@ class IsaFlexEnv:
         try:
             facts = self.post(f"<global facts and defs> {tls_name}")
             return facts
-        except FunctionTimedOut:
-            raise AvailableFactsTimeout
+        except:
+            facts = {}
+            raise NotImplementedError
 
     def dataset_extraction_global_facts(self, isabelle_state):
         """
@@ -301,7 +299,6 @@ class IsaFlexEnv:
         translated_premises = [step.split()[-1] for step in successful_steps]
         return translated_premises, unsuccessful_premises
 
-    @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
         try:
             obs_string = self.stub.IsabelleCommand(
@@ -313,7 +310,6 @@ class IsaFlexEnv:
             print("**Unsuccessful initialisation**")
             raise InitFailedException
 
-    @func_set_timeout(500, allowOverride=True)
     def extract_theory_steps(self):
         all_steps_str = self.stub.IsabelleCommand(
             server_pb2.IsaCommand(command="PISA extract actions")
