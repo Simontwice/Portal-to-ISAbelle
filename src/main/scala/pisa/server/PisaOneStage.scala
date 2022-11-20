@@ -154,6 +154,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
           }
           case e: Exception => {
             println("Exception while trying to run sledgehammer: " + e.getMessage)
+            return s"$ERROR_MSG: ${e.getMessage}"
           }
         }
         // println(actual_step)
