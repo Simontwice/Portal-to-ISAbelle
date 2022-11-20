@@ -564,10 +564,9 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     // Normal isabelle business
     var tls_to_return: ToplevelState = clone_tls_scala(top_level_state)
     val continue = new Breaks
-    val start_time = System.currentTimeMillis();
-//    println("[step] start_time: " + start_time)
 
     val timeout_in_seconds = 1.max(timeout_in_millis / 1000) // Let the minimum timeout be 1 second.
+    println("[step] timout:", timeout_in_seconds)
 
     val f_st: Future[Unit] = Future.apply {
       Breaks.breakable {
