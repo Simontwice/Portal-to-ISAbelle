@@ -181,6 +181,14 @@ class IsaFlexEnv:
 
         return processed_global
 
+    def was_translate_name_successful(self, next_proof_state):
+        error_prefixes = ("Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact")
+        for prefix_error in error_prefixes:
+            if prefix_error in next_proof_state:
+                print(f"FAILURE: {next_proof_state}")
+                return False
+        return True
+
     def translate_premise_names_to_pisa_names_by_method(self, isabelle_state, premises_names: List[str]):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
         # To original names, before translation.
@@ -209,24 +217,28 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = True
-                for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
-                ]:
-                    if prefix_error in next_proof_state_clean:
-                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
-                        step_correct = False
-                        break
+                if "Step error: Outer syntax error" in next_proof_state_clean:
+                    # Stupid corner cases when "" are required...
+                    print(f"Outer syntax: {next_proof_state_clean}")
+                    pisa_name = step.split()[-1]
+                    pisa_name = f'"{pisa_name}"'
+                    step = f"using {pisa_name}"
+                    next_proof_state, _, done, _ = self.step_to_top_level_state(
+                        step,
+                        isabelle_state.proof_state_id,
+                        -1,
+                    )
+                    next_proof_state_clean = trim_string_optional(next_proof_state)
+                    print(f"next_proof_state_clean: {next_proof_state_clean}")
 
+                step_correct = self.was_translate_name_successful(next_proof_state_clean)
                 if step_correct:
                     pisa_name = step.split()[-1]
                     premise_name_to_pisa_names[premise].append(pisa_name)
                     step_successful = True
 
                     for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp", "by (simp add: ")]:
-                        print(f"method: {method}, original name: {premise}, pisa name: {pisa_name}")
-                        step = method + pisa_name + ")"
-                        print(f"step: {step}")
+                        step = method + f'"{pisa_name}"' + ")"
                         next_proof_state, _, done, _ = self.step_to_top_level_state(
                             step,
                             isabelle_state.proof_state_id,
@@ -239,6 +251,7 @@ class IsaFlexEnv:
                         step_correct = True
                         for prefix_error in ["Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact", "Step error: Failed to apply", "Step error: Bad arguments"]:
                             if prefix_error in next_proof_state_clean:
+                                print(f"[FAILURE] next_proof_state: {next_proof_state}")
                                 step_correct = False
                                 break
                         if step_correct:
@@ -254,7 +267,6 @@ class IsaFlexEnv:
                 unsuccessful_premises_names.append(premise)
 
         return premise_name_to_pisa_names, method_name_to_premises_names_available, unsuccessful_premises_names
-
 
     def translate_premise_names_to_pisa_names(self, isabelle_state, premises_names: List[str]):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
@@ -283,15 +295,21 @@ class IsaFlexEnv:
                 )
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
-                step_correct = True
-                for prefix_error in [
-                  "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
-                ]:
-                    if prefix_error in next_proof_state_clean:
-                        print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
-                        step_correct = False
-                        break
+                if "Step error: Outer syntax error" in next_proof_state_clean:
+                    # Stupid corner cases when "" are required...
+                    print(f"Outer syntax: {next_proof_state_clean}")
+                    pisa_name = step.split()[-1]
+                    pisa_name = f'"{pisa_name}"'
+                    step = f"using {pisa_name}"
+                    next_proof_state, _, done, _ = self.step_to_top_level_state(
+                            step,
+                            isabelle_state.proof_state_id,
+                            -1,
+                        )
+                    next_proof_state_clean = trim_string_optional(next_proof_state)
+                    print(f"next_proof_state_clean: {next_proof_state_clean}")
 
+                step_correct = self.was_translate_name_successful(next_proof_state_clean)
                 if step_correct:
                     pisa_name = step.split()[-1]
                     premise_name_to_pisa_names[premise].append(pisa_name)
