@@ -393,19 +393,18 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   val exp_with_Sledgehammer: MLFunction3[ToplevelState, Theory, Int, (Boolean, (String, List[String]))] = compileFunction[ToplevelState, Theory, Int, (Boolean, (String, List[String]))](
     s""" fn (state1, thy1, timeout) => let
-          fn (state, thy) =>
-             (
-             let
-               val p_state = Toplevel.proof_of state;
-               val ctxt = Proof.context_of p_state;
-               val params = ${Sledgehammer_Commands}.default_params thy
-                     [("provers", "z3 cvc4 spass vampire e"),("timeout","30"),("preplay_timeout","0"),("minimize","false"),("isar_proofs", "false"),("smt_proofs", "true"),("learn","true")];
-               val override = {add=[],del=[],only=false}
-             in
-               ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Auto_Try NONE 1 override p_state
-             end)
-          in Timeout.apply (Time.fromSeconds timeout) go_run (state1, thy1)
-    """.stripMargin)
+           fn (state, thy) =>
+              (
+              let
+                val p_state = Toplevel.proof_of state;
+                val ctxt = Proof.context_of p_state;
+                val params = ${Sledgehammer_Commands}.default_params thy
+                      [("provers", "z3 cvc4 spass vampire e"),("timeout","30"),("preplay_timeout","0"),("minimize","false"),("isar_proofs", "false"),("smt_proofs", "true"),("learn","true")];
+                val override = {add=[],del=[],only=false}
+              in
+                ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Auto_Try NONE 1 override p_state
+              end)
+          in Timeout.apply (Time.fromSeconds timeout) go_run (state1, thy1) end""".stripMargin)
 
   var toplevel: ToplevelState = init_toplevel().force.retrieveNow
   println("Checkpoint 12")
