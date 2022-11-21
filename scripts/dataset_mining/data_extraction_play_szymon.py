@@ -51,11 +51,11 @@ def single_file_to_data_play_szymon(
         except (Exception, FunctionTimedOut) as e:
             error_iterator += 1
             time.sleep(300)
-            logging.info(f"Error in extract_theory_steps: {e}, failed {error_iterator} times")
+            print(f"Error in extract_theory_steps: {e}, failed {error_iterator} times")
 
     if not error_success:
         file_processing_info["init_failed"] = True
-        logging.info(f"did not manage to env.extract_theory_steps, error: {e}")
+        print(f"did not manage to env.extract_theory_steps, error: {e}")
         return file_processing_info
 
     proof_open = False
@@ -121,10 +121,10 @@ def single_file_to_data_play_szymon(
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
                 time.sleep(300)
-                logging.info(f"Error in clone_to_new_name: {e}, failed {error_iterator} times")
+                print(f"Error in clone_to_new_name: {e}, failed {error_iterator} times")
         if not error_success:
             file_processing_info["clone_to_new_name"] = True
-            logging.info(f"did not manage to clone_to_new_name, error: {e}")
+            print(f"did not manage to clone_to_new_name, error: {e}")
             return file_processing_info
 
         prev_proof_level = proof_level
@@ -142,12 +142,12 @@ def single_file_to_data_play_szymon(
                 end = time.time()
                 step_duration = end - start
                 if step_duration > 5:
-                    logging.info(f"A step took longer than 5s; time taken: {step_duration}, step: {step}")
+                    print(f"A step took longer than 5s; time taken: {step_duration}, step: {step}")
                 error_success = True
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
                 time.sleep(300)
-                logging.info(
+                print(
                     f"Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
         if not error_success:
             file_processing_info["step_failed"] = True
@@ -166,10 +166,10 @@ def single_file_to_data_play_szymon(
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
                 time.sleep(300)
-                logging.info(f"Error in get_proof_level: {e}, failed {error_iterator} times")
+                print(f"Error in get_proof_level: {e}, failed {error_iterator} times")
         if not error_success:
             file_processing_info["get_proof_level_failed"] = True
-            logging.info(f"did not manage to get_proof_level, error: {e}")
+            print(f"did not manage to get_proof_level, error: {e}")
             return file_processing_info
 
         finished_subproof = proof_level < prev_proof_level
@@ -191,11 +191,11 @@ def single_file_to_data_play_szymon(
                 except (Exception, FunctionTimedOut) as e:
                     error_iterator += 1
                     time.sleep(300)
-                    logging.info(
+                    print(
                         f"SLEDGEHAMMER Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
             if not error_success:
                 state_sh = 'failure due to time out'
-                logging.info('a sledgehammer step timed out, proceed as sledgehammer failure')
+                print('a sledgehammer step timed out, proceed as sledgehammer failure')
 
             os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
@@ -254,10 +254,10 @@ def single_file_to_data_play_szymon(
                     except (Exception, FunctionTimedOut) as e:
                         error_iterator += 1
                         time.sleep(300)
-                        logging.info(f"Error in dataset_extraction_local_facts: {e}, failed {error_iterator} times")
+                        print(f"Error in dataset_extraction_local_facts: {e}, failed {error_iterator} times")
                 if not error_success:
                     local_facts = {}
-                    logging.info(f"did not manage to extract local_facts for statement, error: {e}")
+                    print(f"did not manage to extract local_facts for statement, error: {e}")
 
                 local_facts_accelerated = split_over_suffixes(local_facts)
                 statement = current_proof["statement"]
@@ -292,29 +292,29 @@ def single_file_to_data_play_szymon(
                 current_proof_sledgehammer["named_assumptions"] = named_assumptions_dict
 
                 ################################################## THM DEPS ############################################
-                logging.info(f"Trying to extract thm_deps")
+                print(f"Trying to extract thm_deps")
                 start = time.time()
                 try:
                     thm_deps = multiple_thm_deps_attempts(
                         env, raw_statement_for_thm_deps, context_names
                     )
-                    logging.info(
+                    print(
                         f"managed theorem deps! name: {raw_statement_for_thm_deps.split(':')[0]}"
                     )
                     # metric_logging.log_scalar("thm_deps", thm_deps_step, value=1)
                     if thm_deps_step % 50 == 0:
-                        logging.info(f"Thm deps: {thm_deps}"[-20:])
+                        print(f"Thm deps: {thm_deps}"[-20:])
                 except Exception as e:
                     wrong_thm_deps.append(f"{proofs_key}: {raw_statement_for_thm_deps}")
                     # metric_logging.log_scalar("thm_deps", thm_deps_step, value=0)
                     thm_deps = []
-                    logging.info(
+                    print(
                         f"my guy did not manage to extract thm_deps; {proofs_key}: {raw_statement_for_thm_deps}, error: {e}"
                     )
                 end = time.time()
                 thm_deps_time = end - start
                 if thm_deps_time > 0.2:
-                    logging.info(
+                    print(
                         f"Thm_deps extraction attempt took: ~ {thm_deps_time} s"
                     )
                 # metric_logging.log_scalar("thm_deps_time", thm_deps_step, value=thm_deps_time)
@@ -364,7 +364,7 @@ def single_file_to_data_play_szymon(
             global_facts_step += 1
             start = time.time()
 
-            logging.info(f"Trying to obtain global facts")
+            print(f"Trying to obtain global facts")
             error_iterator = 0
             error_success = False
             while error_iterator < num_attempts and not error_success:
@@ -376,9 +376,9 @@ def single_file_to_data_play_szymon(
                 except (Exception, FunctionTimedOut) as e:
                     error_iterator += 1
                     time.sleep(300)
-                    logging.info(f"Error in dataset_extraction_global_facts: {e}, failed {error_iterator} times")
+                    print(f"Error in dataset_extraction_global_facts: {e}, failed {error_iterator} times")
             if not error_success:
-                logging.info(
+                print(
                     f"Failed to extract global facts in file {theory_file_path}, error: {e}"
                 )
                 file_processing_info["global_facts_failed"] = True
@@ -386,9 +386,9 @@ def single_file_to_data_play_szymon(
 
             global_facts_accelerated = split_over_suffixes(global_facts)
             # metric_logging.log_scalar("all_facts", global_facts_step, value=1)
-            logging.info(f"Global facts extracted!")
+            print(f"Global facts extracted!")
             end = time.time()
-            logging.info(f"The global facts extraction took: {end - start} seconds")
+            print(f"The global facts extraction took: {end - start} seconds")
             # metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
 
     ########################################### PREMISES TO STATEMENTS MATCHING ########################################
