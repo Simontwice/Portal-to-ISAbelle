@@ -24,7 +24,7 @@ global_facts_step = 0
 
 
 def single_file_to_data_play_szymon(
-    theory_file_path, out_dir, error_log_dir, metadata_log_dir, env
+        theory_file_path, out_dir, error_log_dir, metadata_log_dir, env, num_attempts=3
 ):
     file_relative_path, prefix = get_relative_path(theory_file_path)
     proofs_key = f"{prefix}:{file_relative_path}"
@@ -41,10 +41,19 @@ def single_file_to_data_play_szymon(
     sledgehammer_proofs = []
     wrong_thm_deps = []
 
-    try:
-        all_steps = env.extract_theory_steps()
+    error_iterator = 0
+    error_success = False
+    while error_iterator < num_attempts and not error_success:
+        try:
+            all_steps = env.extract_theory_steps()
+            error_success = True
 
-    except (Exception, FunctionTimedOut) as e:
+        except (Exception, FunctionTimedOut) as e:
+            error_iterator += 1
+            time.sleep(300)
+            logging.info(f"Error in extract_theory_steps: {e}, failed {error_iterator} times")
+
+    if not error_success:
         file_processing_info["init_failed"] = True
         logging.info(f"did not manage to env.extract_theory_steps, error: {e}")
         return file_processing_info
@@ -80,19 +89,18 @@ def single_file_to_data_play_szymon(
     for step_num, step in enumerate(all_steps):
         global thm_deps_step
         if step.startswith(
-            "context "
+                "context "
         ):  # this is some magic in case thm_deps fails when called normally
             step_split = step.split()
             context_names.append(step_split[step_split.index("context") + 1])
 
         if proof_open and not step.startswith("text"):
-
             possible_premises = isa_step_to_fact_candidates(step)
             current_proof["transitions"].append(
                 {
                     "state": state,
                     "prev_state": prev_state,
-                    "prev_step": all_steps[step_num-1] if proof_level>0 else "",
+                    "prev_step": all_steps[step_num - 1] if proof_level > 0 else "",
                     "step": step,
                     "possible_premises": possible_premises,
                     "premises_without_statements": None,
@@ -104,27 +112,44 @@ def single_file_to_data_play_szymon(
                 }
             )
 
-        env.clone_to_new_name("default", "prev default")
+        error_iterator = 0
+        error_success = False
+        while error_iterator < num_attempts and not error_success:
+            try:
+                env.clone_to_new_name("default", "prev default")
+                error_success = True
+            except (Exception, FunctionTimedOut) as e:
+                error_iterator += 1
+                time.sleep(300)
+                logging.info(f"Error in clone_to_new_name: {e}, failed {error_iterator} times")
+        if not error_success:
+            file_processing_info["clone_to_new_name"] = True
+            logging.info(f"did not manage to clone_to_new_name, error: {e}")
+            return file_processing_info
+
         prev_proof_level = proof_level
         prev_prev_state = prev_state
         prev_state = state
         ######################################################## STEP ##################################################
-        try:
-            start = time.time()
-            state, rew, done, _ = env.step_to_top_level_state(
-                step, "default", "default"
-            )
-            end = time.time()
-            step_duration = end - start
-            if step_duration > 5:
-                logging.info(
-                    f"A step took longer than 5s; time taken: {step_duration}, step: {step}"
+        error_iterator = 0
+        error_success = False
+        while error_iterator < num_attempts and not error_success:
+            try:
+                start = time.time()
+                state, rew, done, _ = env.step_to_top_level_state(
+                    step, "default", "default"
                 )
-
-        except Exception as e:
-            logging.info(
-                f"A step in file {theory_file_path} has failed! Step: {step}, Progress in file: {step_num/len(all_steps)}, error: {e}"
-            )
+                end = time.time()
+                step_duration = end - start
+                if step_duration > 5:
+                    logging.info(f"A step took longer than 5s; time taken: {step_duration}, step: {step}")
+                error_success = True
+            except (Exception, FunctionTimedOut) as e:
+                error_iterator += 1
+                time.sleep(300)
+                logging.info(
+                    f"Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
+        if not error_success:
             file_processing_info["step_failed"] = True
             file_processing_info["step_failed_info"] = (
                 step_num,
@@ -132,19 +157,45 @@ def single_file_to_data_play_szymon(
             )
             return file_processing_info
 
-        proof_level = int(env.get_proof_level("default"))
+        error_iterator = 0
+        error_success = False
+        while error_iterator < num_attempts and not error_success:
+            try:
+                proof_level = env.get_proof_level("default")
+                error_success = True
+            except (Exception, FunctionTimedOut) as e:
+                error_iterator += 1
+                time.sleep(300)
+                logging.info(f"Error in get_proof_level: {e}, failed {error_iterator} times")
+        if not error_success:
+            file_processing_info["get_proof_level_failed"] = True
+            logging.info(f"did not manage to get_proof_level, error: {e}")
+            return file_processing_info
+
         finished_subproof = proof_level < prev_proof_level
 
         ############################################### SLEDGEHAMMER STEP ##############################################
         if finished_subproof:
             # SH step time
-            try:
-                state_sh, rew, done, _ = env.step_to_top_level_state(
-                    "sledgehammer", "prev default", "sh_default"
-                )
-            except (Exception, FunctionTimedOut) as e:
+            error_iterator = 0
+            error_success = False
+            while error_iterator < num_attempts and not error_success:
+                try:
+                    start = time.time()
+                    state_sh, rew, done, _ = env.step_to_top_level_state(
+                        "sledgehammer", "prev default", "sh_default"
+                    )
+                    end = time.time()
+                    step_duration = end - start
+                    error_success = True
+                except (Exception, FunctionTimedOut) as e:
+                    error_iterator += 1
+                    time.sleep(300)
+                    logging.info(
+                        f"SLEDGEHAMMER Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
+            if not error_success:
                 state_sh = 'failure due to time out'
-                print('a sledgehammer step timed out, proceed as sledgehammer failure')
+                logging.info('a sledgehammer step timed out, proceed as sledgehammer failure')
 
             os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
@@ -163,7 +214,7 @@ def single_file_to_data_play_szymon(
                 current_proof_sledgehammer["transitions"].append(
                     {
                         "step": hammer_step,
-                        "prev_step": all_steps[step_num-1] if prev_proof_level>0 else "",
+                        "prev_step": all_steps[step_num - 1] if prev_proof_level > 0 else "",
                         "state": prev_state,
                         "prev_state": prev_prev_state,
                         "premises_without_statements": premises_without_statements_hammer,
@@ -192,9 +243,22 @@ def single_file_to_data_play_szymon(
                 proof_open = False
                 ################################################## LOCAL FACTS #################################################
 
-                local_facts = env.dataset_extraction_local_facts(
-                    isabelle_state="prev default"
-                )
+                error_iterator = 0
+                error_success = False
+                while error_iterator < num_attempts and not error_success:
+                    try:
+                        local_facts = env.dataset_extraction_local_facts(
+                            isabelle_state="prev default"
+                        )
+                        error_success = True
+                    except (Exception, FunctionTimedOut) as e:
+                        error_iterator += 1
+                        time.sleep(300)
+                        logging.info(f"Error in dataset_extraction_local_facts: {e}, failed {error_iterator} times")
+                if not error_success:
+                    local_facts = {}
+                    logging.info(f"did not manage to extract local_facts for statement: {transition['statement']}, error: {e}")
+
                 local_facts_accelerated = split_over_suffixes(local_facts)
                 statement = current_proof["statement"]
                 named_assumptions = extract_assumption_names(str(statement))
@@ -293,7 +357,7 @@ def single_file_to_data_play_szymon(
                 prev_state = ""
 
         if (
-            len(all_steps) - step_num == 5
+                len(all_steps) - step_num == 5
         ):  # if we're near the end, call global facts. When called at the very end, it often fails
             ########################################## GLOBAL FACTS EXTRACTION #########################################
             global global_facts_step
@@ -301,22 +365,28 @@ def single_file_to_data_play_szymon(
             start = time.time()
 
             logging.info(f"Trying to obtain global facts")
-            try:
-                global_facts = env.dataset_extraction_global_facts(
-                    isabelle_state="default"
-                )
-                global_facts_accelerated = split_over_suffixes(global_facts)
-                # metric_logging.log_scalar("all_facts", global_facts_step, value=1)
-                logging.info(f"Global facts extracted!")
-
-            except Exception as e:
-                # metric_logging.log_scalar("all_facts", global_facts_step, value=0)
+            error_iterator = 0
+            error_success = False
+            while error_iterator < num_attempts and not error_success:
+                try:
+                    global_facts = env.dataset_extraction_global_facts(
+                        isabelle_state="default"
+                    )
+                    error_success = True
+                except (Exception, FunctionTimedOut) as e:
+                    error_iterator += 1
+                    time.sleep(300)
+                    logging.info(f"Error in dataset_extraction_global_facts: {e}, failed {error_iterator} times")
+            if not error_success:
                 logging.info(
                     f"Failed to extract global facts in file {theory_file_path}, error: {e}"
                 )
                 file_processing_info["global_facts_failed"] = True
                 return file_processing_info
 
+            global_facts_accelerated = split_over_suffixes(global_facts)
+            # metric_logging.log_scalar("all_facts", global_facts_step, value=1)
+            logging.info(f"Global facts extracted!")
             end = time.time()
             logging.info(f"The global facts extraction took: {end - start} seconds")
             # metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
@@ -330,7 +400,7 @@ def single_file_to_data_play_szymon(
         }
         for transition in proof["transitions"]:
             total_stuff_to_check = (
-                transition["premises_without_statements"] + transition["definitions"]
+                    transition["premises_without_statements"] + transition["definitions"]
             )
             for premise in total_stuff_to_check:
                 premise_and_statement_list = match_premise_and_facts_w_statements(
@@ -347,8 +417,8 @@ def single_file_to_data_play_szymon(
         }
         for sh_transition in sh_proof["transitions"]:
             total_stuff_to_check_sh = (
-                sh_transition["premises_without_statements"]
-                + sh_transition["definitions"]
+                    sh_transition["premises_without_statements"]
+                    + sh_transition["definitions"]
             )
             for sh_premise in total_stuff_to_check_sh:
                 premise_and_statement_list_sh = match_premise_and_facts_w_statements(
@@ -359,23 +429,23 @@ def single_file_to_data_play_szymon(
 
     ########################################### AND WRITE TO FILE #####################################
     with open(
-        f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+            f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
     ) as fp:
         json.dump(proofs, fp, indent=2)
 
     with open(
-        f'{out_dir}_SH/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+            f'{out_dir}_SH/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
     ) as fsh:
         json.dump(sledgehammer_proofs, fsh, indent=2)
 
     with open(
-        f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+            f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
     ) as fp:
         json.dump(file_processing_info, fp, indent=2)
 
     if len(wrong_thm_deps) > 0:
         with open(
-            f'{error_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+                f'{error_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
         ) as fpe:
             json.dump(wrong_thm_deps, fpe, indent=2)
 
