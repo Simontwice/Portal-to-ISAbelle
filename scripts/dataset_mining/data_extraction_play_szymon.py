@@ -74,7 +74,7 @@ def single_file_to_data_play_szymon(
         "assumptions": {},
         "named_assumptions": {},
     }
-    prev_prev_state = ""
+
     prev_state = ""
 
     for step_num, step in enumerate(all_steps):
@@ -92,6 +92,7 @@ def single_file_to_data_play_szymon(
                 {
                     "state": state,
                     "prev_state": prev_state,
+                    "prev_step": all_steps[step_num-1] if proof_level>0 else "",
                     "step": step,
                     "possible_premises": possible_premises,
                     "premises_without_statements": None,
@@ -172,6 +173,7 @@ def single_file_to_data_play_szymon(
                 current_proof_sledgehammer["transitions"].append(
                     {
                         "step": hammer_step,
+                        "prev_step": all_steps[step_num-1] if prev_proof_level>0 else "",
                         "state": prev_state,
                         "prev_state": prev_prev_state,
                         "premises_without_statements": premises_without_statements_hammer,
