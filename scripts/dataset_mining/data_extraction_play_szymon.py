@@ -135,12 +135,25 @@ def single_file_to_data_play_szymon(
         finished_subproof = proof_level < prev_proof_level
 
         ############################################### SLEDGEHAMMER STEP ##############################################
+        if finished_subproof:
+            # SH step time
+            try:
+                state_sh, rew, done, _ = env.step_to_top_level_state(
+                    "sledgehammer", "prev default", "sh_default"
+                )
+            except (Exception, FunctionTimedOut) as e:
+                state_sh = 'failure due to time out'
+                print('a sledgehammer step timed out, proceed as sledgehammer failure')
 
         if finished_subproof:
             # SH step time
-            state_sh, rew, done, _ = env.step_to_top_level_state(
-                "sledgehammer", "prev default", "sh_default"
-            )
+            try:
+                state_sh, rew, done, _ = env.step_to_top_level_state(
+                    "sledgehammer", "prev default", "sh_default"
+                )
+            except (Exception, FunctionTimedOut) as e:
+                state_sh = 'failure due to time out'
+                print('a sledgehammer step timed out, proceed as sledgehammer failure')
 
             os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
@@ -285,6 +298,7 @@ def single_file_to_data_play_szymon(
                     "named_assumptions": {},
                 }
                 prev_prev_state = ""
+                prev_state = ""
 
         if (
             len(all_steps) - step_num == 5
