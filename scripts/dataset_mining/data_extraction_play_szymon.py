@@ -161,7 +161,7 @@ def single_file_to_data_play_szymon(
         error_success = False
         while error_iterator < num_attempts and not error_success:
             try:
-                proof_level = env.get_proof_level("default")
+                proof_level = int(env.get_proof_level("default"))
                 error_success = True
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
@@ -257,7 +257,7 @@ def single_file_to_data_play_szymon(
                         logging.info(f"Error in dataset_extraction_local_facts: {e}, failed {error_iterator} times")
                 if not error_success:
                     local_facts = {}
-                    logging.info(f"did not manage to extract local_facts for statement: {transition['statement']}, error: {e}")
+                    logging.info(f"did not manage to extract local_facts for statement, error: {e}")
 
                 local_facts_accelerated = split_over_suffixes(local_facts)
                 statement = current_proof["statement"]
