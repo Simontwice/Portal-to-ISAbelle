@@ -613,9 +613,9 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
   }
 
   def exp_with_hammer(top_level_state: ToplevelState, timeout_in_millis: Int = 35000): (Boolean, List[String]) = {
-    timeout_in_sec = timeout_in_millis/1000
+    val timeout_in_seconds = timeout_in_millis/1000
     val f_res: Future[(Boolean, List[String])] = Future.apply {
-      val first_result = exp_with_Sledgehammer(top_level_state, thy1, timeout_in_sec, timeout_in_sec.toString).force.retrieveNow
+      val first_result = exp_with_Sledgehammer(top_level_state, thy1, timeout_in_seconds, timeout_in_seconds.toString).force.retrieveNow
       (first_result._1, first_result._2._2)
     }
     Await.result(f_res, Duration.Inf)
