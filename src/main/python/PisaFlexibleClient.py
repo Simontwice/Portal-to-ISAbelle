@@ -52,6 +52,7 @@ class _InactiveRpcError(Exception):
     pass
 
 
+@func_set_timeout(1800, allowOverride=True)
 def create_stub(port=9000):
     channel = grpc.insecure_channel(
         "localhost:{}".format(port),
@@ -65,11 +66,11 @@ def create_stub(port=9000):
 
 class IsaFlexEnv:
     def __init__(
-        self,
-        port=9000,
-        isa_path="/Applications/Isabelle2020.app/Isabelle",
-        starter_string="theory Test imports Complex_Main begin",
-        working_directory="/Users/qj213/Projects/afp-2021-02-11/thys/Functional-Automata",
+            self,
+            port=9000,
+            isa_path="/Applications/Isabelle2020.app/Isabelle",
+            starter_string="theory Test imports Complex_Main begin",
+            working_directory="/Users/qj213/Projects/afp-2021-02-11/thys/Functional-Automata",
     ):
         self.port = port
         self.isa_path = isa_path
@@ -81,9 +82,11 @@ class IsaFlexEnv:
         self.successful_starting = False
         self.reset()
 
+    @func_set_timeout(1800, allowOverride=True)
     def observation(self):
         return self.obs_string
 
+    @func_set_timeout(1800, allowOverride=True)
     def is_finished(self, name_of_tls):
         returned_string = self.stub.IsabelleCommand(
             server_pb2.IsaCommand(command=f"<is finished> {name_of_tls}")
@@ -97,6 +100,7 @@ class IsaFlexEnv:
     def reward(done):
         return 1.0 if done else 0.0
 
+    @func_set_timeout(1800, allowOverride=True)
     def reset(self):
         self.stub = create_stub(port=self.port)
         try:
@@ -142,19 +146,23 @@ class IsaFlexEnv:
         done = self.is_finished(new_name)
         return obs_string, self.reward(done), done, {}
 
+    @func_set_timeout(1800, allowOverride=True)
     def proceed_after(self, line_string):
         return self.post(f"<proceed after> {line_string}", forceTimeout=10000)
 
+    @func_set_timeout(1800, allowOverride=True)
     def clone_to_new_name(self, old_name, new_name):
         return self.post(f"<clone> {old_name} <clone> {new_name}", forceTimeout=10)
 
-    def get_proof_level(self,tls_name="default"):
+    @func_set_timeout(1800, allowOverride=True)
+    def get_proof_level(self, tls_name="default"):
         return self.post(f"<get_proof_level> {tls_name}")
 
     @func_set_timeout(1800, allowOverride=True)
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
 
+    @func_set_timeout(1800, allowOverride=True)
     def proceed_to_line(self, line_stirng, before_after):
         assert before_after in ["before", "after"]
         try:
@@ -170,18 +178,21 @@ class IsaFlexEnv:
             print(e)
             raise ProceedToLineFailedException
 
+    @func_set_timeout(1800, allowOverride=True)
     def dependent_theorems(self, theorem_name):
         theorems = self.stub.IsabelleCommand(
             server_pb2.IsaCommand(command=f"<get_thm_deps> {theorem_name}")
         ).state
         return theorems.split("<SEP>")
 
+    @func_set_timeout(1800, allowOverride=True)
     def local_facts(self, tls_name="default"):
         try:
             return self.post(f"<local facts and defs> {tls_name}")
         except:
             return "failed"
 
+    @func_set_timeout(1800, allowOverride=True)
     def global_facts(self, tls_name="default"):
         try:
             facts = self.post(f"<global facts and defs> {tls_name}")
@@ -189,6 +200,7 @@ class IsaFlexEnv:
         except FunctionTimedOut:
             raise AvailableFactsTimeout
 
+    @func_set_timeout(1800, allowOverride=True)
     def dataset_extraction_global_facts(self, isabelle_state):
         """
         for dataset extraction purposes
@@ -215,6 +227,7 @@ class IsaFlexEnv:
             translated_premises[correct_name] = premise_statement
         return translated_premises
 
+    @func_set_timeout(1800, allowOverride=True)
     def dataset_extraction_local_facts(self, isabelle_state):
         """
         for dataset extraction purposes
@@ -236,6 +249,7 @@ class IsaFlexEnv:
             translated_premises[translated_name] = premise_statement
         return translated_premises
 
+    @func_set_timeout(1800, allowOverride=True)
     def all_facts_processed(self, dataset_extraction=False):
         _global = self.global_facts()
         _local = self.local_facts()
@@ -252,6 +266,7 @@ class IsaFlexEnv:
 
         return processed_global
 
+    @func_set_timeout(1800, allowOverride=True)
     def translate_premise_names(self, isabelle_state, premise_names: List[str]):
         """
 
@@ -290,7 +305,7 @@ class IsaFlexEnv:
 
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = (
-                    "Step error: Undefined fact" not in next_proof_state_clean
+                        "Step error: Undefined fact" not in next_proof_state_clean
                 )
                 if step_correct:
                     successful_steps.append(step)
@@ -301,7 +316,7 @@ class IsaFlexEnv:
         translated_premises = [step.split()[-1] for step in successful_steps]
         return translated_premises, unsuccessful_premises
 
-    @func_set_timeout(100, allowOverride=True)
+    @func_set_timeout(1000, allowOverride=True)
     def initialise_toplevel_state_map(self):
         try:
             obs_string = self.stub.IsabelleCommand(
