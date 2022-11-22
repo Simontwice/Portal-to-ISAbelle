@@ -51,11 +51,11 @@ def single_file_to_data_play_szymon(
         except (Exception, FunctionTimedOut) as e:
             error_iterator += 1
             time.sleep(300)
-            print(f"Error in extract_theory_steps: {e}, failed {error_iterator} times")
+            print(f"Error in extract_theory_steps:  , failed {error_iterator} times")
 
     if not error_success:
         file_processing_info["init_failed"] = True
-        print(f"did not manage to env.extract_theory_steps, error: {e}")
+        print(f"did not manage to env.extract_theory_steps, error:  ")
         return file_processing_info
 
     proof_open = False
@@ -121,10 +121,10 @@ def single_file_to_data_play_szymon(
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
                 time.sleep(300)
-                print(f"Error in clone_to_new_name: {e}, failed {error_iterator} times")
+                print(f"Error in clone_to_new_name:  , failed {error_iterator} times")
         if not error_success:
             file_processing_info["clone_to_new_name"] = True
-            print(f"did not manage to clone_to_new_name, error: {e}")
+            print(f"did not manage to clone_to_new_name, error:  ")
             return file_processing_info
 
         prev_proof_level = proof_level
@@ -148,7 +148,7 @@ def single_file_to_data_play_szymon(
                 error_iterator += 1
                 time.sleep(300)
                 print(
-                    f"Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
+                    f"Error: {step} in step_to_top_level_state:  , failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
         if not error_success:
             file_processing_info["step_failed"] = True
             file_processing_info["step_failed_info"] = (
@@ -166,10 +166,10 @@ def single_file_to_data_play_szymon(
             except (Exception, FunctionTimedOut) as e:
                 error_iterator += 1
                 time.sleep(300)
-                print(f"Error in get_proof_level: {e}, failed {error_iterator} times")
+                print(f"Error in get_proof_level:  , failed {error_iterator} times")
         if not error_success:
             file_processing_info["get_proof_level_failed"] = True
-            print(f"did not manage to get_proof_level, error: {e}")
+            print(f"did not manage to get_proof_level, error:  ")
             return file_processing_info
 
         finished_subproof = proof_level < prev_proof_level
@@ -192,7 +192,7 @@ def single_file_to_data_play_szymon(
                     error_iterator += 1
                     time.sleep(300)
                     print(
-                        f"SLEDGEHAMMER Error: {step} in step_to_top_level_state: {e}, failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
+                        f"SLEDGEHAMMER Error: {step} in step_to_top_level_state:  , failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
             if not error_success:
                 state_sh = 'failure due to time out'
                 print('a sledgehammer step timed out, proceed as sledgehammer failure')
@@ -254,10 +254,10 @@ def single_file_to_data_play_szymon(
                     except (Exception, FunctionTimedOut) as e:
                         error_iterator += 1
                         time.sleep(300)
-                        print(f"Error in dataset_extraction_local_facts: {e}, failed {error_iterator} times")
+                        print(f"Error in dataset_extraction_local_facts:  , failed {error_iterator} times")
                 if not error_success:
                     local_facts = {}
-                    print(f"did not manage to extract local_facts for statement, error: {e}")
+                    print(f"did not manage to extract local_facts for statement, error:  ")
 
                 local_facts_accelerated = split_over_suffixes(local_facts)
                 statement = current_proof["statement"]
@@ -309,7 +309,7 @@ def single_file_to_data_play_szymon(
                     # metric_logging.log_scalar("thm_deps", thm_deps_step, value=0)
                     thm_deps = []
                     print(
-                        f"my guy did not manage to extract thm_deps; {proofs_key}: {raw_statement_for_thm_deps}, error: {e}"
+                        f"my guy did not manage to extract thm_deps; {proofs_key}: {raw_statement_for_thm_deps}, error:  "
                     )
                 end = time.time()
                 thm_deps_time = end - start
@@ -376,10 +376,10 @@ def single_file_to_data_play_szymon(
                 except (Exception, FunctionTimedOut) as e:
                     error_iterator += 1
                     time.sleep(300)
-                    print(f"Error in dataset_extraction_global_facts: {e}, failed {error_iterator} times")
+                    print(f"Error in dataset_extraction_global_facts:  , failed {error_iterator} times")
             if not error_success:
                 print(
-                    f"Failed to extract global facts in file {theory_file_path}, error: {e}"
+                    f"Failed to extract global facts in file {theory_file_path}, error:  "
                 )
                 file_processing_info["global_facts_failed"] = True
                 return file_processing_info
