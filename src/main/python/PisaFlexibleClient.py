@@ -1,8 +1,7 @@
 from __future__ import print_function
 
 import os
-from collections import defaultdict
-
+import json
 import grpc
 from absl import logging
 
