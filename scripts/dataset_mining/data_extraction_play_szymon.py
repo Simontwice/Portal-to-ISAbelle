@@ -411,7 +411,6 @@ def single_file_to_data_play_szymon(
             # metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
 
     ########################################### PREMISES TO STATEMENTS MATCHING ########################################
-    breakpoint()
     for proof in proofs:
         local_facts_accelerated = split_over_suffixes(proof["local_facts"])
         global_and_local_facts_accelerated = {
