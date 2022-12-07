@@ -155,7 +155,7 @@ class IsaInstance:
 class DataIsaJob:
     def __init__(
         self,
-        theory_file_path="/home/szymon/afp-2021-10-22/thys/Transition_Systems_and_Automata/Automata/DRA/DRA.thy",
+        theory_file_path="/home/szymon/afp-2021-10-22/thys/Concurrent_Ref_Alg/Galois_Connections.thy",
         isa_path="/home/szymon/Isabelle2021",
         out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",

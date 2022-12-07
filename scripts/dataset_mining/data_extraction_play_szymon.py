@@ -2,7 +2,6 @@ import json
 import os
 import time
 
-from absl import logging
 from func_timeout import FunctionTimedOut
 from smart_open import open
 
@@ -38,7 +37,8 @@ def single_file_to_data_play_szymon(
         "successful": False,
     }
     proofs = []
-    sledgehammer_proofs = []
+    sledgehammer_proofs_on_decrease = []
+    sledgehammer_proofs_on_increase = []
     wrong_thm_deps = []
 
     error_iterator = 0
@@ -48,7 +48,7 @@ def single_file_to_data_play_szymon(
             all_steps = env.extract_theory_steps()
             error_success = True
 
-        except (Exception, FunctionTimedOut) as e:
+        except (Exception, FunctionTimedOut):
             error_iterator += 1
             time.sleep(300)
             print(f"Error in extract_theory_steps:  , failed {error_iterator} times")
@@ -76,7 +76,14 @@ def single_file_to_data_play_szymon(
         "assumptions": {},
         "named_assumptions": {},
     }
-    current_proof_sledgehammer = {
+    current_proof_sledgehammer_on_decrease = {
+        "statement": None,
+        "transitions": [],
+        "local_facts": {},
+        "assumptions": {},
+        "named_assumptions": {},
+    }
+    current_proof_sledgehammer_on_increase = {
         "statement": None,
         "transitions": [],
         "local_facts": {},
@@ -118,7 +125,7 @@ def single_file_to_data_play_szymon(
             try:
                 env.clone_to_new_name("default", "prev default")
                 error_success = True
-            except (Exception, FunctionTimedOut) as e:
+            except (Exception, FunctionTimedOut):
                 error_iterator += 1
                 time.sleep(300)
                 print(f"Error in clone_to_new_name:  , failed {error_iterator} times")
@@ -144,7 +151,7 @@ def single_file_to_data_play_szymon(
                 if step_duration > 5:
                     print(f"A step took longer than 5s; time taken: {step_duration}, step: {step}")
                 error_success = True
-            except (Exception, FunctionTimedOut) as e:
+            except (Exception, FunctionTimedOut):
                 error_iterator += 1
                 time.sleep(300)
                 print(
@@ -163,7 +170,7 @@ def single_file_to_data_play_szymon(
             try:
                 proof_level = int(env.get_proof_level("default"))
                 error_success = True
-            except (Exception, FunctionTimedOut) as e:
+            except (Exception, FunctionTimedOut):
                 error_iterator += 1
                 time.sleep(300)
                 print(f"Error in get_proof_level:  , failed {error_iterator} times")
@@ -173,22 +180,18 @@ def single_file_to_data_play_szymon(
             return file_processing_info
 
         finished_subproof = proof_level < prev_proof_level
-
+        started_subproof = proof_level > prev_proof_level
         ############################################### SLEDGEHAMMER STEP ##############################################
-        if finished_subproof:
+        if finished_subproof or started_subproof:
+            current_proof_state = "prev default" if finished_subproof else "default"
             # SH step time
             error_iterator = 0
             error_success = False
             while error_iterator < num_attempts and not error_success:
                 try:
-                    start = time.time()
-                    state_sh, rew, done, _ = env.step_to_top_level_state(
-                        "sledgehammer", "prev default", "sh_default"
-                    )
-                    end = time.time()
-                    step_duration = end - start
+                    state_sh, rew, done, _ = env.step_to_top_level_state("normalhammer", current_proof_state, "sh_default")
                     error_success = True
-                except (Exception, FunctionTimedOut) as e:
+                except (Exception, FunctionTimedOut):
                     error_iterator += 1
                     time.sleep(300)
                     print(
@@ -203,15 +206,15 @@ def single_file_to_data_play_szymon(
             os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
             os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
 
-            hammer_time_success = state_sh.startswith("by ")
+            hammer_time_success = state_sh.startswith("by ") or state_sh.startswith("using")
             if hammer_time_success:
-                hammer_step = state_sh.split("<hammer>")[0]
+                hammer_step = state_sh.split("<hammer>")[0].strip()
                 premises_without_statements_hammer = (
                     auxiliary_simp_metis_smt_meson_matches(
-                        isa_step_to_fact_candidates(hammer_step), hammer_step
+                        isa_step_to_fact_candidates(hammer_step), hammer_step, force=True
                     )
                 )
-                current_proof_sledgehammer["transitions"].append(
+                current_proof_sledgehammer_transition = \
                     {
                         "step": hammer_step,
                         "prev_step": all_steps[step_num - 1] if prev_proof_level > 0 else "",
@@ -227,7 +230,11 @@ def single_file_to_data_play_szymon(
                         "premises": [],
                         "proof_level": prev_proof_level,
                     }
-                )
+
+                if finished_subproof:
+                    current_proof_sledgehammer_on_decrease["transitions"].append(current_proof_sledgehammer_transition)
+                else:
+                    current_proof_sledgehammer_on_increase["transitions"].append(current_proof_sledgehammer_transition)
 
         if not proof_open:
             # means we just started the proof, this step was the lemma statement
@@ -235,7 +242,8 @@ def single_file_to_data_play_szymon(
                 proof_open = True
                 assert current_proof["statement"] is None
                 current_proof["statement"] = step
-                current_proof_sledgehammer["statement"] = step
+                for sh_calling_paradigm in [current_proof_sledgehammer_on_decrease,current_proof_sledgehammer_on_increase]:
+                    sh_calling_paradigm["statement"] = step
                 raw_statement_for_thm_deps = step
         else:
             if proof_level == 0:
@@ -251,7 +259,7 @@ def single_file_to_data_play_szymon(
                             isabelle_state="prev default"
                         )
                         error_success = True
-                    except (Exception, FunctionTimedOut) as e:
+                    except (Exception, FunctionTimedOut):
                         error_iterator += 1
                         time.sleep(300)
                         print(f"Error in dataset_extraction_local_facts:  , failed {error_iterator} times")
@@ -266,10 +274,11 @@ def single_file_to_data_play_szymon(
                     **current_proof["local_facts"],
                     **local_facts,
                 }
-                current_proof_sledgehammer["local_facts"] = {
-                    **current_proof_sledgehammer["local_facts"],
-                    **local_facts,
-                }
+                for sh_calling_paradigm in [current_proof_sledgehammer_on_decrease,current_proof_sledgehammer_on_increase]:
+                    sh_calling_paradigm["local_facts"] = {
+                        **sh_calling_paradigm["local_facts"],
+                        **local_facts,
+                    }
                 assms = {
                     name: statement
                     for name, statement in local_facts.items()
@@ -288,8 +297,10 @@ def single_file_to_data_play_szymon(
                 )
                 current_proof["assumptions"] = assms
                 current_proof["named_assumptions"] = named_assumptions_dict
-                current_proof_sledgehammer["assumptions"] = assms
-                current_proof_sledgehammer["named_assumptions"] = named_assumptions_dict
+                for sh_calling_paradigm in [current_proof_sledgehammer_on_decrease,current_proof_sledgehammer_on_increase]:
+                    sh_calling_paradigm["assumptions"] = assms
+                    sh_calling_paradigm["named_assumptions"] = named_assumptions_dict
+
 
                 ################################################## THM DEPS ############################################
                 print(f"Trying to extract thm_deps")
@@ -304,7 +315,7 @@ def single_file_to_data_play_szymon(
                     # metric_logging.log_scalar("thm_deps", thm_deps_step, value=1)
                     if thm_deps_step % 50 == 0:
                         print(f"Thm deps: {thm_deps}"[-20:])
-                except Exception as e:
+                except (Exception,FunctionTimedOut):
                     wrong_thm_deps.append(f"{proofs_key}: {raw_statement_for_thm_deps}")
                     # metric_logging.log_scalar("thm_deps", thm_deps_step, value=0)
                     thm_deps = []
@@ -335,10 +346,11 @@ def single_file_to_data_play_szymon(
                         )
                     )
                 proofs.append(current_proof)
-                sledgehammer_proofs.append(current_proof_sledgehammer)
+                sledgehammer_proofs_on_decrease.append(current_proof_sledgehammer_on_decrease)
+                sledgehammer_proofs_on_increase.append(current_proof_sledgehammer_on_increase)
                 del current_proof
-                del current_proof_sledgehammer
-
+                del current_proof_sledgehammer_on_decrease
+                del current_proof_sledgehammer_on_increase
                 current_proof = {
                     "statement": None,
                     "transitions": [],
@@ -346,7 +358,14 @@ def single_file_to_data_play_szymon(
                     "assumptions": {},
                     "named_assumptions": {},
                 }
-                current_proof_sledgehammer = {
+                current_proof_sledgehammer_on_increase = {
+                    "statement": None,
+                    "transitions": [],
+                    "local_facts": {},
+                    "assumptions": {},
+                    "named_assumptions": {},
+                }
+                current_proof_sledgehammer_on_decrease = {
                     "statement": None,
                     "transitions": [],
                     "local_facts": {},
@@ -373,7 +392,7 @@ def single_file_to_data_play_szymon(
                         isabelle_state="default"
                     )
                     error_success = True
-                except (Exception, FunctionTimedOut) as e:
+                except (Exception, FunctionTimedOut):
                     error_iterator += 1
                     time.sleep(300)
                     print(f"Error in dataset_extraction_global_facts:  , failed {error_iterator} times")
@@ -392,6 +411,7 @@ def single_file_to_data_play_szymon(
             # metric_logging.log_scalar("global_facts_time", thm_deps_step, value=end - start)
 
     ########################################### PREMISES TO STATEMENTS MATCHING ########################################
+    breakpoint()
     for proof in proofs:
         local_facts_accelerated = split_over_suffixes(proof["local_facts"])
         global_and_local_facts_accelerated = {
@@ -409,23 +429,24 @@ def single_file_to_data_play_szymon(
                 transition["premises"] += premise_and_statement_list
             transition["premises"] = dict(set(transition["premises"]))
 
-    for sh_proof in sledgehammer_proofs:
-        local_facts_accelerated_sh = split_over_suffixes(sh_proof["local_facts"])
-        global_and_local_facts_accelerated_sh = {
-            **global_facts_accelerated,
-            **local_facts_accelerated_sh,
-        }
-        for sh_transition in sh_proof["transitions"]:
-            total_stuff_to_check_sh = (
-                    sh_transition["premises_without_statements"]
-                    + sh_transition["definitions"]
-            )
-            for sh_premise in total_stuff_to_check_sh:
-                premise_and_statement_list_sh = match_premise_and_facts_w_statements(
-                    sh_premise, global_and_local_facts_accelerated_sh
+    for sh_calling_paradigm in [sledgehammer_proofs_on_decrease, sledgehammer_proofs_on_increase]:
+        for sh_proof in sh_calling_paradigm:
+            local_facts_accelerated_sh = split_over_suffixes(sh_proof["local_facts"])
+            global_and_local_facts_accelerated_sh = {
+                **global_facts_accelerated,
+                **local_facts_accelerated_sh,
+            }
+            for sh_transition in sh_proof["transitions"]:
+                total_stuff_to_check_sh = (
+                        sh_transition["premises_without_statements"]
+                        + sh_transition["definitions"]
                 )
-                sh_transition["premises"] += premise_and_statement_list_sh
-            sh_transition["premises"] = dict(set(sh_transition["premises"]))
+                for sh_premise in total_stuff_to_check_sh:
+                    premise_and_statement_list_sh = match_premise_and_facts_w_statements(
+                        sh_premise, global_and_local_facts_accelerated_sh
+                    )
+                    sh_transition["premises"] += premise_and_statement_list_sh
+                sh_transition["premises"] = dict(set(sh_transition["premises"]))
 
     ########################################### AND WRITE TO FILE #####################################
     with open(
@@ -434,9 +455,14 @@ def single_file_to_data_play_szymon(
         json.dump(proofs, fp, indent=2)
 
     with open(
-            f'{out_dir}_SH/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+            f'{out_dir}_SH_on_decrease/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
     ) as fsh:
-        json.dump(sledgehammer_proofs, fsh, indent=2)
+        json.dump(sledgehammer_proofs_on_decrease, fsh, indent=2)
+
+    with open(
+            f'{out_dir}_SH_on_increase/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
+    ) as fsh:
+        json.dump(sledgehammer_proofs_on_increase, fsh, indent=2)
 
     with open(
             f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
