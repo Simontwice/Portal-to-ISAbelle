@@ -114,6 +114,7 @@ def single_file_to_data_play_szymon(
 
     ########################################### AND WRITE TO FILE #####################################
     non_proof_text = "".join(non_proof_steps)
+    non_proof_text = json.dumps(non_proof_text)
     breakpoint()
     with open(
             f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}_non_proof_steps.json', "w"
