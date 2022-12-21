@@ -101,11 +101,11 @@ def single_file_to_data_play_szymon(
 
         if not proof_was_open_before_step:
             if proof_level == 0:
-                breakpoint()
                 non_proof_steps.append(step)
             # means we just started the proof, this step was the lemma statement
             else:
                 proof_was_open_before_step = True
+                non_proof_steps.append(step)
 
         else:
             if proof_level == 0:
@@ -113,12 +113,12 @@ def single_file_to_data_play_szymon(
 
 
     ########################################### AND WRITE TO FILE #####################################
-    proofs = json.dumps(non_proof_steps)
+    non_proof_text = "".join(non_proof_steps)
     breakpoint()
     with open(
             f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}_non_proof_steps.json', "w"
     ) as fp:
-        json.dump(proofs, fp, indent=2)
+        json.dump(non_proof_text, fp, indent=2)
 
     with open(
             f'{metadata_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
