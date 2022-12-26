@@ -113,7 +113,7 @@ def single_file_to_data_play_szymon(
 
 
     ########################################### AND WRITE TO FILE #####################################
-    non_proof_text = "".join(non_proof_steps)
+    non_proof_text = "<proof_step_sep>".join(non_proof_steps)
     non_proof_text = json.dumps(non_proof_text)
     breakpoint()
     with open(
