@@ -70,7 +70,7 @@ class IsabelleServer:
         env = initialise_env(
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
-        time.sleep(1)
+        time.sleep(3)
         env.post("<initialise>")
         return env
 
