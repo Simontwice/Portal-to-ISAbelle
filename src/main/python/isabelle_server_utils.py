@@ -14,6 +14,7 @@ def find_pisa_path():
         path = path.parents[0]
     return path.resolve()
 
+
 class IsabelleServer:
     def __init__(self):
         self.port = 9000
@@ -37,7 +38,9 @@ class IsabelleServer:
         print("starting the server")
         print("deleting sbt bg-jobs folder")
         os.system("rm -rf target/bg-jobs/")
-        os.chdir("~/interactive_isabelle/pisa")
+        pwd = os.getcwd().split("/")
+        pwd = pwd[: pwd.index("home") + 1] + "/interactive_isabelle/pisa"
+        os.chdir(pwd)
         sub = subprocess.Popen(
             'sbt "runMain pisa.server.PisaOneStageServer{0}" | tee sbt_ready.txt'.format(
                 self.port
@@ -53,8 +56,8 @@ class IsabelleServer:
                 with open("sbt_ready.txt", "r") as f:
                     file_content = f.read()
                 if (
-                        "Server is running. Press Ctrl-C to stop." in file_content
-                        and "error" not in file_content
+                    "Server is running. Press Ctrl-C to stop." in file_content
+                    and "error" not in file_content
                 ):
                     print("sbt should be ready")
                     sbt_ready = True
@@ -64,7 +67,9 @@ class IsabelleServer:
                 os.system("rm sbt_ready.txt")
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
-        env = initialise_env(self.port, isa_path=isa_path, theory_file_path=theory_file_path)
+        env = initialise_env(
+            self.port, isa_path=isa_path, theory_file_path=theory_file_path
+        )
         return env
 
     def _stop_isabelle_server(self):
@@ -89,9 +94,7 @@ class IsabelleServer:
         os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
-        os.system(
-            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
-        )
+        os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
 
@@ -105,7 +108,15 @@ class IsabelleServer:
         os.system(
             "ps aux | grep sbt | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
         )
-        os.system("ps -ef | grep scala | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
-        os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
-        os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
-        os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
+        os.system(
+            "ps -ef | grep scala | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system(
+            "ps -ef | grep java | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system(
+            "ps -ef | grep polu | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system(
+            "ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
