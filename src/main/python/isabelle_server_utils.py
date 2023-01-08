@@ -14,16 +14,16 @@ def find_pisa_path():
         path = path.parents[0]
     return path.resolve()
 
-class IsabelleServerTmuxConnection:
+class IsabelleServer:
     def __init__(self):
         self.port = 9000
         self.isabelle_pid = None
         self.env = None
 
-    def restart_isabelle_server(self, isa_path, theory_file_path):
+    def initialise_env(self, isa_path, theory_file_path):
         self._stop_isabelle_server()
         self.env = self._start_isabelle_server(isa_path, theory_file_path)
-        pass
+        return self.env
 
     def _start_isabelle_server(self, isa_path, theory_file_path):
         self.env = None
@@ -63,7 +63,6 @@ class IsabelleServerTmuxConnection:
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
         env = initialise_env(self.port, isa_path=isa_path, theory_file_path=theory_file_path)
-        _ = env.initialise_toplevel_state_map()
         return env
 
     def _stop_isabelle_server(self):
@@ -83,6 +82,16 @@ class IsabelleServerTmuxConnection:
 
         except psutil.NoSuchProcess:
             print("[close_sbt_process] No processes to kill! ")
+
+    def clean_external_prover_memory_footprint(self):
+        os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
+        os.system(
+            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
+        )
+        os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
+        os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
 
     def _stop_rouge_isabelle_processes(self):
         os.system(

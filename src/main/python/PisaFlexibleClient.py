@@ -405,53 +405,20 @@ class IsaFlexEnv:
             raise InitFailedException
 
 
-def initialise_env(port, isa_path, theory_file_path=None, working_directory=None, test_theorems_only=False):
-    if working_directory is None:
-        actual_working_dir_candidate = str(Path(theory_file_path).parents[0])
-        i = 0
-        success = False
-        # if we are only concerned with universal_test_theorems, then the working_directory path is one that ends with /thys/xyz and the task is much simpler
-        if test_theorems_only:
-            layers = theory_file_path.split("/")
-            while layers[-2] != "thys" and len(layers) > 2:
-                layers = layers[:-1]
-            try:
-                assert layers[-2] == "thys"
-                working_directory = os.path.join(*layers)
-                if not working_directory.startswith("/"):
-                    working_directory = "/" + working_directory.strip()
+def initialise_env(port, isa_path, theory_file_path):
+    layers = theory_file_path.split("/")
+    while layers[-2] != "thys" and len(layers) > 2:
+        layers = layers[:-1]
+    try:
+        assert layers[-2] == "thys"
+        working_directory = os.path.join(*layers)
+        if not working_directory.startswith("/"):
+            working_directory = "/" + working_directory.strip()
 
-                env = IsaFlexEnv(port=port, isa_path=isa_path, starter_string=theory_file_path,
-                                  working_directory=working_directory)
-                success = True
-            except AssertionError:
-                raise EnvInitFailedException
-
-        # in case of dataset extraction etc, we have to be more generic
-        else:
-            while not success and i < 10:
-                try:
-                    env = IsaFlexEnv(
-                        port=port,
-                        isa_path=isa_path,
-                        starter_string=theory_file_path,
-                        working_directory=actual_working_dir_candidate,
-                    )
-                    success = True
-                except:
-                    actual_working_dir_candidate = str(
-                        Path(actual_working_dir_candidate).parents[0]
-                    )
-                    i += 1
-        if success:
-            print(
-                f"Automatically detected working directory: {actual_working_dir_candidate}"
-            )
-        else:
-            print(
-                f"Did not manage to detect working directory: {actual_working_dir_candidate}"
-            )
-            raise EnvInitFailedException
+        env = IsaFlexEnv(port=port, isa_path=isa_path, starter_string=theory_file_path,
+                          working_directory=working_directory)
+    except AssertionError:
+        raise EnvInitFailedException
     return env
 
 
