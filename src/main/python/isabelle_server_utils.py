@@ -1,7 +1,11 @@
+import logging
 import os
+import signal
 import subprocess
-from time import sleep
+import time
 import pathlib
+
+from pisa.src.main.python.PisaFlexibleClient import initialise_env
 
 
 def find_pisa_path():
@@ -11,166 +15,86 @@ def find_pisa_path():
     return path.resolve()
 
 class IsabelleServerTmuxConnection:
-    def __init__(self, compile_pisa=True):
-        self.used_ports = set()
-        self.accessible_ports = [i * 1000 for i in range(8, 15)]
-        self.num_trials = 180
-        self.compile_pisa = compile_pisa
+    def __init__(self):
+        self.port = 9000
+        self.isabelle_pid = None
+        self.env = None
 
+    def restart_isabelle_server(self, isa_path, theory_file_path):
+        self._stop_isabelle_server()
+        self.env = self._start_isabelle_server(isa_path, theory_file_path)
+        pass
 
+    def _start_isabelle_server(self, isa_path, theory_file_path):
+        self.env = None
+        start_time_single = time.time()
+        self._stop_rouge_isabelle_processes()
+        if os.path.exists("sbt_ready.txt"):
+            os.system("rm sbt_ready.txt")
 
-    def port_to_session(self, port):
-        return f"isa_server_{port}"
-
-    def create_local_tmux_session(self, session_name):
-        script = f"tmux has-session -t {session_name} || tmux new-session -d -A -s {session_name}"
-        subprocess.run(script, shell=True, capture_output=True)
-
-    def kill_local_tmux_session(self, session_name):
-        script = f"tmux kill-session -t {session_name}"
-        subprocess.run(script, shell=True, capture_output=True)
-
-    def send_command_to_tmux(self, command, session_name):
-        script = f"tmux send-keys -t {session_name}:0 '{command}' Enter"
-        return subprocess.run(script, shell=True, capture_output=True)
-
-    def read_tmux(self, port):
-        message = subprocess.run(
-            f"tmux capture-pane -t {self.port_to_session(port)}; tmux show-buffer; tmux delete-buffer",
+        sbt_ready = False
+        print("starting the server")
+        print("deleting sbt bg-jobs folder")
+        os.system("rm -rf target/bg-jobs/")
+        sub = subprocess.Popen(
+            'sbt "runMain pisa.server.PisaOneStageServer{0}" | tee sbt_ready.txt'.format(
+                self.port
+            ),
             shell=True,
-            capture_output=True,
-        ).stdout.decode("utf-8")
-        return message
-
-    def check_is_running(self, port, report=False):
-        out = self.read_tmux(port)
-        if report:
-            print(out[-100:])
-        return "Server is running" in out[-100:]
-
-    def check_sbt_compilation(self, port):
-        out = self.read_tmux(port)
-        return "[success]" in out[-100:]
-
-    def stop_isabelle_server(self, port):
-        self.send_command_to_tmux("C-c", self.port_to_session(port))
-
-    def restart_isabelle_server(self, port):
-        self.close_isabelle_server(port)
-        stop_string = "[error] Use 'last' for the full log"
-        sleep(1)
-        for _ in range(5):
-            if stop_string in self.read_tmux(port)[-100:]:
-                break
-            else:
-                sleep(1)
-        try:
-            #soft reset
-            assert stop_string in self.read_tmux(port)[-100:]
-            print(f"server stopped, time to restart")
-            self.send_command_to_tmux(
-                f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
-                self.port_to_session(port),
-            )
-            for _ in range(self.num_trials):
-                if self.check_is_running(port):
-                    break
-                sleep(1)
-            sleep(5)
-            assert self.check_is_running(port, report=True)
-            print(
-                f"Isabelle server restarted. To access: tmux attach-session -t {self.port_to_session(port)}"
-            )
-        except AssertionError:
-            #hard reset, by close + start
-            self.hard_restart_isabelle_server(port)
-        return True
-
-    def hard_restart_isabelle_server(self,port):
-        self.close_isabelle_server(port)
-        _ = self.start_isabelle_server(port)
-        return True
-
-
-    def restart_many_servers(self, ports, stop_previous=True):
-        for port in ports:
-            self.stop_isabelle_server(port)
-        sleep(1)
-        for port in ports:
-            self.send_command_to_tmux(
-                f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
-                self.port_to_session(port),
-            )
-        for _ in range(self.num_trials):
-            ports_running = [self.check_is_running(port) for port in ports]
-            if all(ports_running):
-                break
-            sleep(1)
-        print(f"Running servers on ports {ports}")
-
-    def start_isabelle_server(self, port):
-        print(f"Starting server on port {port}")
-        print(f"Check running = {self.check_is_running(port)}")
-        if not self.check_is_running(port):
-            self.create_local_tmux_session(self.port_to_session(port))
-            self.send_command_to_tmux(
-                f"cd {find_pisa_path()}", self.port_to_session(port)
-            )
-            if self.compile_pisa:
-                self.send_command_to_tmux("sbt compile", self.port_to_session(port))
-                for _ in range(self.num_trials):
-                    if self.check_sbt_compilation(port):
-                        self.compile_pisa = False
-                        break
-                    sleep(1)
-                assert self.check_sbt_compilation(port)
-
-            self.send_command_to_tmux(
-                f'sbt "runMain pisa.server.PisaOneStageServer{port}"',
-                self.port_to_session(port),
-            )
-            for _ in range(self.num_trials):
-                port_running = self.check_is_running(port)
-                if port_running:
-                    break
-                sleep(1)
-
-            is_running = self.check_is_running(port,report=True)
-            i=0
-            while not is_running and i<100:
-                is_running = self.check_is_running(port,report=True)
-                i+=1
-                sleep(5)
-            if i==100:
-                raise AssertionError
-            self.used_ports.add(port)
-            sleep(5)
-        return True
-
-    def clean_external_prover_memory_footprint(self):
-        os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
-        os.system(
-            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
         )
-        os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
-        sleep(5)
+        pid = sub.pid
+        self.isabelle_pid = pid
+        while not sbt_ready:
+            print(f"time from start: {time.time() - start_time_single}")
+            time.sleep(1)
+            if os.path.exists("sbt_ready.txt"):
+                with open("sbt_ready.txt", "r") as f:
+                    file_content = f.read()
+                if (
+                        "Server is running. Press Ctrl-C to stop." in file_content
+                        and "error" not in file_content
+                ):
+                    print("sbt should be ready")
+                    sbt_ready = True
+            if time.time() - start_time_single > 180:
+                self._close_sbt_process(pid, verbose=False)
+                self._stop_rouge_isabelle_processes()
+                os.system("rm sbt_ready.txt")
+                raise NotImplementedError
+        print(f"Server started with pid {pid}")
+        env = initialise_env(self.port, isa_path=isa_path, theory_file_path=theory_file_path)
+        _ = env.initialise_toplevel_state_map()
+        return env
 
+    def _stop_isabelle_server(self):
+        if self.isabelle_pid is not None:
+            self._close_sbt_process(self.isabelle_pid)
+        self._stop_rouge_isabelle_processes()
+        print("[stop_isabelle_server] server stopped!")
 
-    def full_clean_isabelle_footprint(self):
-        self.clean_external_prover_memory_footprint()
-        os.system("ps -ef | grep scala | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9")
-        os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9")
+    def _close_sbt_process(self, isabelle_process_id, verbose=True):
+        try:
+            parent = psutil.Process(isabelle_process_id)
+            children = parent.children(recursive=True)
+            for process in children:
+                process.send_signal(signal.SIGTERM)
+            parent.send_signal(signal.SIGTERM)
+            print("[close_sbt_process] Processes killed! ")
 
+        except psutil.NoSuchProcess:
+            print("[close_sbt_process] No processes to kill! ")
 
-
-    def close_isabelle_server(self, port):
-        self.clean_external_prover_memory_footprint()
-        os.system("rm -rf ~/interactive_isabelle/pisa/target/bg-jobs")
-        if port in self.used_ports:
-            self.used_ports.remove(port)
-        self.kill_local_tmux_session(self.port_to_session(port))
+    def _stop_rouge_isabelle_processes(self):
+        os.system(
+            "ps aux | grep Isabelle | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system(
+            "ps aux | grep poly | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system(
+            "ps aux | grep sbt | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1"
+        )
+        os.system("ps -ef | grep scala | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
+        os.system("ps -ef | grep java | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
+        os.system("ps -ef | grep polu | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
+        os.system("ps -ef | grep 'bash sbt' | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1")
