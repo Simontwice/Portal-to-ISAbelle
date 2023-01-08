@@ -4,6 +4,7 @@ import signal
 import subprocess
 import time
 import pathlib
+import psutil
 
 from pisa.src.main.python.PisaFlexibleClient import initialise_env
 
