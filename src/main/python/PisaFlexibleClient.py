@@ -94,8 +94,6 @@ class IsaFlexEnv:
             print(self.stub.IsabelleContext(server_pb2.IsaContext(context=self.starter_string)).message)
             self.successful_starting = True
             print("Successfully initialised an Isabelle process")
-            self.reset_external_provers()
-            print("Cleaned external provers memory footprint")
         except Exception as e:
             print("Failure at initialising Isabelle process. "
                   "Make sure the path your provide is where the Isabelle executable is.")

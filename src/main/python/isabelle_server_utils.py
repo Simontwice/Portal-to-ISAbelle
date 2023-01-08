@@ -70,6 +70,7 @@ class IsabelleServer:
         env = initialise_env(
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
+        env.post("<initialise>")
         breakpoint()
         return env
 
