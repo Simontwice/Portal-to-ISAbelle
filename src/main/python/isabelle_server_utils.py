@@ -26,6 +26,7 @@ class IsabelleServer:
         return self.env
 
     def _start_isabelle_server(self, isa_path, theory_file_path):
+        breakpoint()
         self.env = None
         start_time_single = time.time()
         self._stop_rouge_isabelle_processes()
