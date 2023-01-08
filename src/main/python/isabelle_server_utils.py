@@ -37,6 +37,7 @@ class IsabelleServer:
         print("starting the server")
         print("deleting sbt bg-jobs folder")
         os.system("rm -rf target/bg-jobs/")
+        os.chdir("~/interactive_isabelle/pisa")
         sub = subprocess.Popen(
             'sbt "runMain pisa.server.PisaOneStageServer{0}" | tee sbt_ready.txt'.format(
                 self.port
