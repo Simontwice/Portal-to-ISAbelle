@@ -11,46 +11,60 @@ from typing import List, Dict
 
 from pisa.src.main.python import server_pb2, server_pb2_grpc
 from pathlib import Path
-from pisa.src.main.python.misc_utils import trim_string_optional, process_raw_global_facts, process_raw_facts
+from pisa.src.main.python.misc_utils import (
+    trim_string_optional,
+    process_raw_global_facts,
+    process_raw_facts,
+)
 
 MAX_MESSAGE_LENGTH = 100485760
+
 
 class EmptyInitialStateException(Exception):
     pass
 
+
 class InitFailedException(Exception):
     pass
+
 
 class EnvInitFailedException(Exception):
     pass
 
+
 class ProceedToLineFailedException(Exception):
     pass
+
 
 class StepToTopLevelStateException(Exception):
     pass
 
+
 class AvailableFactsExtractionError(Exception):
     pass
 
+
 class AvailableFactsTimeout(Exception):
     pass
+
 
 class _InactiveRpcError(Exception):
     pass
 
 
 def create_stub(port=9000):
-    channel = grpc.insecure_channel('localhost:{}'.format(port),
-                                    options=[('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
-                                             ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH)])
+    channel = grpc.insecure_channel(
+        "localhost:{}".format(port),
+        options=[
+            ("grpc.max_send_message_length", MAX_MESSAGE_LENGTH),
+            ("grpc.max_receive_message_length", MAX_MESSAGE_LENGTH),
+        ],
+    )
     return server_pb2_grpc.ServerStub(channel)
 
 
 class IsaFlexEnv:
-    def __init__(self, port=9000, isa_path="/Applications/Isabelle2020.app/Isabelle",
-                 starter_string="theory Test imports Complex_Main begin",
-                 working_directory="/Users/qj213/Projects/afp-2021-02-11/thys/Functional-Automata"):
+    def __init__(self, port, isa_path, starter_string, working_directory):
         self.port = port
         self.isa_path = isa_path
         self.starter_string = starter_string
@@ -63,9 +77,11 @@ class IsaFlexEnv:
 
     def observation(self):
         return self.obs_string
-        
+
     def is_finished(self, name_of_tls):
-        returned_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<is finished> {name_of_tls}")).state.strip()
+        returned_string = self.stub.IsabelleCommand(
+            server_pb2.IsaCommand(command=f"<is finished> {name_of_tls}")
+        ).state.strip()
         if returned_string.startswith("t"):
             return True
         else:
@@ -73,40 +89,57 @@ class IsaFlexEnv:
 
     @staticmethod
     def reward(done):
-        return 1. if done else 0.
+        return 1.0 if done else 0.0
 
     @staticmethod
     def reset_external_provers():
         os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
-        os.system(
-            "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
-        )
+        os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
         os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
 
     def reset(self):
         self.stub = create_stub(port=self.port)
         try:
-            print(self.stub.InitialiseIsabelle(server_pb2.IsaPath(path=self.isa_path)).message)
-            print(self.stub.IsabelleWorkingDirectory(server_pb2.IsaPath(path=self.working_directory)).message)
-            print(self.stub.IsabelleContext(server_pb2.IsaContext(context=self.starter_string)).message)
+            print(
+                self.stub.InitialiseIsabelle(
+                    server_pb2.IsaPath(path=self.isa_path)
+                ).message
+            )
+            print(
+                self.stub.IsabelleWorkingDirectory(
+                    server_pb2.IsaPath(path=self.working_directory)
+                ).message
+            )
+            print(
+                self.stub.IsabelleContext(
+                    server_pb2.IsaContext(context=self.starter_string)
+                ).message
+            )
             self.successful_starting = True
             print("Successfully initialised an Isabelle process")
         except Exception as e:
-            print("Failure at initialising Isabelle process. "
-                  "Make sure the path your provide is where the Isabelle executable is.")
+            print(
+                "Failure at initialising Isabelle process. "
+                "Make sure the path your provide is where the Isabelle executable is."
+            )
             print(e)
         return self.obs_string
 
     @func_set_timeout(1800, allowOverride=True)
-    def step_to_top_level_state(self, action, tls_name, new_name, timeout, delete_failed=False):
+    def step_to_top_level_state(
+        self, action, tls_name, new_name, timeout, delete_failed=False
+    ):
         obs_string = "Step error"
         done = False
         try:
             obs_string = self.stub.IsabelleCommand(
-                server_pb2.IsaCommand(command=f"<apply to top level state> {tls_name} <apply to top level state> {action} <apply to top level state> {new_name} <apply to top level state> {timeout}")).state
+                server_pb2.IsaCommand(
+                    command=f"<apply to top level state> {tls_name} <apply to top level state> {action} <apply to top level state> {new_name} <apply to top level state> {timeout}"
+                )
+            ).state
             done = self.is_finished(new_name)
         except Exception as e:
             print("***Something went wrong***")
@@ -115,7 +148,9 @@ class IsaFlexEnv:
             if not done and delete_failed:
                 for error_keyword in ("Step error", "Unknown error"):
                     if error_keyword in obs_string:
-                        self.stub.IsabelleCommand(server_pb2.IsaCommand(command=f"<delete> {new_name}"))
+                        self.stub.IsabelleCommand(
+                            server_pb2.IsaCommand(command=f"<delete> {new_name}")
+                        )
                         # logging.info(f"[PISA] Deleted new_state with name: {new_name}")
                         break
 
@@ -142,7 +177,9 @@ class IsaFlexEnv:
         try:
             command = f"<proceed {before_after}> {line_stirng}"
             print(command)
-            message = self.stub.IsabelleCommand(server_pb2.IsaCommand(command=command)).state
+            message = self.stub.IsabelleCommand(
+                server_pb2.IsaCommand(command=command)
+            ).state
             print(message)
             return message
         except Exception as e:
@@ -179,10 +216,14 @@ class IsaFlexEnv:
 
         return processed_global
 
-    def translate_premise_names_to_pisa_names_by_method(self, isabelle_state, premises_names: List[str]):
+    def translate_premise_names_to_pisa_names_by_method(
+        self, isabelle_state, premises_names: List[str]
+    ):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
         # To original names, before translation.
-        method_name_to_premises_names_available: Dict[str, List[str]] = defaultdict(list)
+        method_name_to_premises_names_available: Dict[str, List[str]] = defaultdict(
+            list
+        )
         unsuccessful_premises_names: List[str] = []
         for premise in premises_names:
             possible_premise_names = []
@@ -209,7 +250,9 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+                    "Step error: Undefined fact",
+                    "Step error: Bad fact",
+                    "Step error: Inaccessible fact",
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
@@ -220,7 +263,11 @@ class IsaFlexEnv:
                     premise_name_to_pisa_names[premise].append(pisa_name)
                     step_successful = True
 
-                    for method_name, method in [("metis", "by metis ("), ("smt", "by (smt (z3) "), ("simp add", "by (simp add: ")]:
+                    for method_name, method in [
+                        ("metis", "by metis ("),
+                        ("smt", "by (smt (z3) "),
+                        ("simp add", "by (simp add: "),
+                    ]:
                         step = method + pisa_name + ")"
                         next_proof_state, _, done, _ = self.step_to_top_level_state(
                             step,
@@ -231,25 +278,39 @@ class IsaFlexEnv:
 
                         next_proof_state_clean = trim_string_optional(next_proof_state)
                         step_correct = True
-                        for prefix_error in ["Step error: Undefined fact", "Step error: Bad fact", "Step error: Failed to apply"]:
+                        for prefix_error in [
+                            "Step error: Undefined fact",
+                            "Step error: Bad fact",
+                            "Step error: Failed to apply",
+                        ]:
                             if prefix_error in next_proof_state_clean:
                                 step_correct = False
                                 break
                         if step_correct:
-                            method_name_to_premises_names_available[method_name].append(premise)
+                            method_name_to_premises_names_available[method_name].append(
+                                premise
+                            )
 
                     os.system("ps -ef | grep z3 | awk '{print $2}' | xargs kill -9")
                     os.system("ps -ef | grep veriT | awk '{print $2}' | xargs kill -9")
                     os.system("ps -ef | grep cvc4 | awk '{print $2}' | xargs kill -9")
-                    os.system("ps -ef | grep eprover | awk '{print $2}' | xargs kill -9")
+                    os.system(
+                        "ps -ef | grep eprover | awk '{print $2}' | xargs kill -9"
+                    )
                     os.system("ps -ef | grep SPASS | awk '{print $2}' | xargs kill -9")
                     os.system("ps -ef | grep csdp | awk '{print $2}' | xargs kill -9")
             if not step_successful:
                 unsuccessful_premises_names.append(premise)
 
-            return premise_name_to_pisa_names, method_name_to_premises_names_available, unsuccessful_premises_names
+            return (
+                premise_name_to_pisa_names,
+                method_name_to_premises_names_available,
+                unsuccessful_premises_names,
+            )
 
-    def translate_premise_names_to_pisa_names(self, isabelle_state, premises_names: List[str]):
+    def translate_premise_names_to_pisa_names(
+        self, isabelle_state, premises_names: List[str]
+    ):
         premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
         unsuccessful_premises_names: List[str] = []
 
@@ -278,7 +339,9 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                  "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+                    "Step error: Undefined fact",
+                    "Step error: Bad fact",
+                    "Step error: Inaccessible fact",
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
@@ -293,8 +356,9 @@ class IsaFlexEnv:
 
         return premise_name_to_pisa_names, unsuccessful_premises_names
 
-
-    def translate_premise_names_with_ids(self, isabelle_state, premise_id_to_name: Dict[int, str]):
+    def translate_premise_names_with_ids(
+        self, isabelle_state, premise_id_to_name: Dict[int, str]
+    ):
         premise_id_to_names_translated: Dict[int, List[str]] = defaultdict(list)
         unsuccessful_premises_ids: List[int] = []
 
@@ -323,7 +387,9 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+                    "Step error: Undefined fact",
+                    "Step error: Bad fact",
+                    "Step error: Inaccessible fact",
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
@@ -376,7 +442,8 @@ class IsaFlexEnv:
                 next_proof_state_clean = trim_string_optional(next_proof_state)
                 step_correct = True
                 for prefix_error in [
-                    "Step error: Undefined fact", "Step error: Bad fact"
+                    "Step error: Undefined fact",
+                    "Step error: Bad fact",
                 ]:
                     if prefix_error in next_proof_state_clean:
                         step_correct = False
@@ -388,14 +455,15 @@ class IsaFlexEnv:
             if not step_successful:
                 unsuccessful_premises.append(premise)
 
-
         translated_premises = [step.split()[-1] for step in successful_steps]
         return translated_premises, unsuccessful_premises
 
     @func_set_timeout(100, allowOverride=True)
     def initialise_toplevel_state_map(self):
         try:
-            obs_string = self.stub.IsabelleCommand(server_pb2.IsaCommand(command="<initialise>")).state
+            obs_string = self.stub.IsabelleCommand(
+                server_pb2.IsaCommand(command="<initialise>")
+            ).state
             print(obs_string)
             return obs_string
         except Exception as e:
@@ -413,12 +481,12 @@ def initialise_env(port, isa_path, theory_file_path):
         if not working_directory.startswith("/"):
             working_directory = "/" + working_directory.strip()
 
-        env = IsaFlexEnv(port=port, isa_path=isa_path, starter_string=theory_file_path,
-                          working_directory=working_directory)
+        env = IsaFlexEnv(
+            port=port,
+            isa_path=isa_path,
+            starter_string=theory_file_path,
+            working_directory=working_directory,
+        )
     except AssertionError:
         raise EnvInitFailedException
     return env
-
-
-
-

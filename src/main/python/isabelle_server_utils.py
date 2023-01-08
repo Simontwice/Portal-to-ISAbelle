@@ -38,6 +38,7 @@ class IsabelleServer:
         print("starting the server")
         print("deleting sbt bg-jobs folder")
         os.system("rm -rf target/bg-jobs/")
+        pwd_orig = os.getcwd()
         pwd = os.getcwd().split("/")
         pwd = f"{'/'.join(pwd[: pwd.index('home') + 2])}/interactive_isabelle/pisa"
         os.chdir(pwd)
@@ -71,6 +72,8 @@ class IsabelleServer:
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
         time.sleep(3)
+        breakpoint()
+        os.chdir(pwd_orig)
         env.post("<initialise>")
         return env
 
