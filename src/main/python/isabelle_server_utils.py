@@ -52,7 +52,6 @@ class IsabelleServer:
         self.isabelle_pid = pid
         while not sbt_ready:
             print(f"time from start: {time.time() - start_time_single}")
-            time.sleep(1)
             if os.path.exists("sbt_ready.txt"):
                 with open("sbt_ready.txt", "r") as f:
                     file_content = f.read()
@@ -68,12 +67,10 @@ class IsabelleServer:
                 os.system("rm sbt_ready.txt")
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
-        breakpoint()
+        time.sleep(3)
         env = initialise_env(
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
-        time.sleep(3)
-        breakpoint()
         os.chdir(pwd_orig)
         env.post("<initialise>")
         return env
