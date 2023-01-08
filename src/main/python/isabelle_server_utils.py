@@ -68,6 +68,7 @@ class IsabelleServer:
                 os.system("rm sbt_ready.txt")
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
+        breakpoint()
         env = initialise_env(
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
