@@ -51,7 +51,6 @@ class IsabelleServer:
         pid = sub.pid
         self.isabelle_pid = pid
         while not sbt_ready:
-            print(f"time from start: {time.time() - start_time_single}")
             if os.path.exists("sbt_ready.txt"):
                 with open("sbt_ready.txt", "r") as f:
                     file_content = f.read()
