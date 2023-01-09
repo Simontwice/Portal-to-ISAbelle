@@ -52,7 +52,7 @@ class IsabelleServer:
         )
         pid = sub.pid
         self.isabelle_pid = pid
-        while not sbt_ready:
+        while True:
             if os.path.exists("sbt_ready.txt"):
                 with open("sbt_ready.txt", "r") as f:
                     file_content = f.read()
@@ -61,19 +61,18 @@ class IsabelleServer:
                     and "error" not in file_content
                 ):
                     print("sbt should be ready")
-                    sbt_ready = True
+                    break
             if time.time() - start_time_single > 180:
                 self._close_sbt_process(pid, verbose=False)
                 self._stop_rouge_isabelle_processes()
                 os.system("rm sbt_ready.txt")
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
-        time.sleep(3)
+        time.sleep(1)
         env = initialise_env(
             self.port, isa_path=isa_path, theory_file_path=theory_file_path
         )
         os.chdir(pwd_orig)
-        env.post("<initialise>")
         return env
 
     def _stop_isabelle_server(self):
