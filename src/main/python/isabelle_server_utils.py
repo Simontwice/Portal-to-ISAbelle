@@ -30,7 +30,7 @@ class IsabelleServer:
     def _start_isabelle_server(self, isa_path, theory_file_path):
         self.env = None
         start_time_single = time.time()
-        self._stop_rouge_isabelle_processes()
+        # self._stop_rouge_isabelle_processes()
         sbt_ready = False
         print("starting the server")
         print("deleting sbt bg-jobs folder")
@@ -64,7 +64,7 @@ class IsabelleServer:
                     break
             if time.time() - start_time_single > 180:
                 self._close_sbt_process(pid, verbose=False)
-                self._stop_rouge_isabelle_processes()
+                # self._stop_rouge_isabelle_processes()
                 os.system("rm sbt_ready.txt")
                 raise NotImplementedError
         print(f"Server started with pid {pid}")
@@ -78,7 +78,7 @@ class IsabelleServer:
     def _stop_isabelle_server(self):
         if self.isabelle_pid is not None:
             self._close_sbt_process(self.isabelle_pid)
-        self._stop_rouge_isabelle_processes()
+        # self._stop_rouge_isabelle_processes()
         print("[stop_isabelle_server] server stopped!")
 
     def _close_sbt_process(self, isabelle_process_id, verbose=True):
