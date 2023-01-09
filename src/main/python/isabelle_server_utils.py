@@ -31,9 +31,6 @@ class IsabelleServer:
         self.env = None
         start_time_single = time.time()
         self._stop_rouge_isabelle_processes()
-        if os.path.exists("sbt_ready.txt"):
-            os.system("rm sbt_ready.txt")
-
         sbt_ready = False
         print("starting the server")
         print("deleting sbt bg-jobs folder")
@@ -42,6 +39,11 @@ class IsabelleServer:
         pwd = os.getcwd().split("/")
         pwd = f"{'/'.join(pwd[: pwd.index('home') + 2])}/interactive_isabelle/pisa"
         os.chdir(pwd)
+
+        if os.path.exists("sbt_ready.txt"):
+            os.system("rm sbt_ready.txt")
+        assert not os.path.exists("sbt_ready.txt")
+
         sub = subprocess.Popen(
             'sbt "runMain pisa.server.PisaOneStageServer{0}" | tee sbt_ready.txt'.format(
                 self.port
