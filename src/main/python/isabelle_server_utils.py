@@ -38,6 +38,8 @@ class IsabelleServer:
         pwd_orig = os.getcwd()
         pwd = os.getcwd().split("/")
         pwd = f"{'/'.join(pwd[: pwd.index('home') + 2])}/interactive_isabelle/pisa"
+        assert os.path.exists(pwd), "where is pisa in the directory structure?"
+        print(f"[isabelle server start] changing to pisa directory to run server; directory={pwd}")
         os.chdir(pwd)
 
         if os.path.exists("sbt_ready.txt"):
@@ -50,6 +52,7 @@ class IsabelleServer:
             ),
             shell=True,
         )
+        print("[isabelle server start] server process has been started!")
         pid = sub.pid
         self.isabelle_pid = pid
         while True:
