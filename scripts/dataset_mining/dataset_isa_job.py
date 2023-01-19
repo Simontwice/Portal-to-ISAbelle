@@ -3,6 +3,8 @@ import os
 import subprocess
 import time
 import sys
+from google.cloud import storage
+
 conf_path = os.getcwd()
 
 upper=os.path.join( conf_path, '..' )
@@ -155,7 +157,7 @@ class IsaInstance:
 class DataIsaJob:
     def __init__(
         self,
-        theory_file_path="/home/szymon/afp-2021-10-22/thys/Concurrent_Ref_Alg/Galois_Connections.thy",
+        theory_file_path="/home/szymon/minif2f/test/mathd_numbertheory_618.thy",
         isa_path="/home/szymon/Isabelle2021",
         out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
