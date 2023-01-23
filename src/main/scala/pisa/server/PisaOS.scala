@@ -558,6 +558,23 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
     stateActionHammerTotal
   }
 
+  def parseActionRaw(isarString : String) : String = {
+    // Here we directly apply transitions to the theory repeatedly
+    // to get the (last_observation, action, observation, reward, done) tuple
+    var actionTotal : String = ""
+    val continue = new Breaks
+    // Initialising the state string
+    var proof_level_number = getProofLevel
+    Breaks.breakable {
+      for ((transition, text) <- parse_text(thy1, isarString).force.retrieveNow)
+        continue.breakable {
+          if (text.trim.isEmpty) continue.break
+          actionTotal = actionTotal + ("<\\ISA_STEP>" + text.trim)
+        }
+    }
+    actionTotal
+  }
+
   def parse: String = parseStateAction(fileContent)
 
   def parse_with_hammer: String = parseStateActionWithHammer(fileContent)
