@@ -66,6 +66,8 @@ class OneStageBody extends ZServer[ZEnv, Any] {
 
   def deal_with_extraction_with_hammer(): String = pisaos.step("PISA extract data with hammer")
 
+  def deal_with_extraction_of_steps(): String = pisaos.step("PISA extract actions")
+
   def deal_with_list_states(): String = pisaos.top_level_state_map.keys.mkString(" | ")
 
   def deal_with_initialise(): String = {
@@ -345,6 +347,7 @@ class OneStageBody extends ZServer[ZEnv, Any] {
         }
 
         else if (isa_command.command == "exit") deal_with_exit(isa_command.command)
+        else if (isa_command.command == "PISA extract actions") pisaos.step(isa_command.command)
         else "Unrecognised operation."
       }
       ZIO.succeed(IsaState(proof_state))

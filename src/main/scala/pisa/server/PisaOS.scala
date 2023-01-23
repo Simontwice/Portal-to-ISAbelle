@@ -13,12 +13,14 @@ import pisa.utils.TheoryManager.{Ops, Source, Text}
 
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.concurrent.duration.Duration
+import scala.util.{Success, Failure}
 
 import sys.process._
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.IsabelleException
 
 object Transition extends AdHocConverter("Toplevel.transition")
 
@@ -558,8 +560,14 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def parse: String = parseStateAction(fileContent)
 
-//  def parse_with_hammer: String = parseStateActionWithHammer(fileContent)
+  def parse_with_hammer: String = parseStateActionWithHammer(fileContent)
 
+  def parse_raw : String = {
+    parseActionRaw(fileContent)
+  }
+
+  @throws(classOf[IsabelleException])
+  @throws(classOf[TimeoutException])
   def step(isar_string: String, top_level_state: ToplevelState, timeout_in_millis: Int = 2000): ToplevelState = {
     // Normal isabelle business
     var tls_to_return: ToplevelState = clone_tls_scala(top_level_state)
@@ -588,12 +596,15 @@ class PisaOS(var path_to_isa_bin: String, var path_to_file: String, var working_
 
   def step(isar_string: String): String = {
     // Specific method for extracting data
-//    if (isar_string == "PISA extract data")
-//      return parse
+    if (isar_string == "PISA extract data")
+      return parse
 
     // Specific method for extracting data with hammer
-//    if (isar_string == "PISA extract data with hammer")
-//      return parse_with_hammer
+    if (isar_string == "PISA extract data with hammer")
+      return parse_with_hammer
+
+    if (isar_string == "PISA extract actions")
+      return parse_raw
 
     // Exit string
     if (isar_string == "exit") {
