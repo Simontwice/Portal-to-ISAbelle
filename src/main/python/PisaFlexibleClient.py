@@ -136,7 +136,7 @@ class IsaFlexEnv:
     def post(self, action):
         return self.stub.IsabelleCommand(server_pb2.IsaCommand(command=action)).state
 
-    def get_proof_level(self, tls_name):
+    def get_proof_level(self, tls_name="default"):
         return self.post(f"<get_proof_level> {tls_name}")
 
     def proceed_to_line(self, line_stirng, before_after):
