@@ -1,10 +1,19 @@
 import json
 import os
 import time
+from collections import defaultdict
+from typing import Dict, List, Optional
 
 from func_timeout import FunctionTimedOut
 from smart_open import open
-
+from smart_open import smart_open
+from pisa.src.main.python.PisaFlexibleClient import (
+    AvailableFactsTimeout,
+    EmptyInitialStateException,
+    EnvInitFailedException,
+    InitFailedException,
+    ProceedToLineFailedException,
+)
 from data_generation_utils import (
     isa_step_to_fact_candidates,
     match_premise_and_deps,
@@ -23,14 +32,9 @@ global_facts_step = 0
 
 
 def single_file_to_data_play_szymon(
-        theory_file_path, out_dir, error_log_dir, metadata_log_dir, env, num_attempts=3
+        theory_file_path, out_dir, error_log_dir, metadata_log_dir, env, num_attempts=3,i=-1
 ):
-    file_relative_path, prefix = get_relative_path(theory_file_path)
-    proofs = []
-    sledgehammer_proofs_on_decrease = []
-    sledgehammer_proofs_on_increase = []
-    wrong_thm_deps = []
-
+    start = time.time()
     error_iterator = 0
     error_success = False
     while error_iterator < num_attempts and not error_success:
@@ -42,86 +46,150 @@ def single_file_to_data_play_szymon(
             error_iterator += 1
             time.sleep(300)
             print(f"Error in extract_theory_steps:  , failed {error_iterator} times")
-
     if not error_success:
         raise NotImplementedError
-
-    prev_state = ""
-
+    facts ={}
     for step_num, step in enumerate(all_steps):
-        while error_iterator < num_attempts and not error_success:
-            try:
-                env.clone_to_new_name("default", "prev default")
-                error_success = True
-            except (Exception, FunctionTimedOut):
-                error_iterator += 1
-                time.sleep(300)
-                print(f"Error in clone_to_new_name:  , failed {error_iterator} times")
-        if not error_success:
-            raise NotImplementedError
+        try:
+            state, rew, done, _ = env.step_to_top_level_state(
+                step, "default", "default"
+            )
+            proof_level = int(env.get_proof_level())
+            if proof_level>0:
+                facts = env.all_facts_processed()
+                process_facts(env,available_facts=facts, problem_key=i,lemma="<lemmaname>",relative_path="<relpath>")
+                break
+        except (Exception, FunctionTimedOut):
+            error_iterator += 1
 
-        prev_proof_level = proof_level
-        prev_prev_state = prev_state
-        prev_state = state
-        ######################################################## STEP ##################################################
-        error_iterator = 0
-        error_success = False
-        while error_iterator < num_attempts and not error_success:
-            try:
-                start = time.time()
-                state, rew, done, _ = env.step_to_top_level_state(
-                    step, "default", "default"
-                )
-                end = time.time()
-                step_duration = end - start
-                if step_duration > 5:
-                    print(f"A step took longer than 5s; time taken: {step_duration}, step: {step}")
-                error_success = True
-            except (Exception, FunctionTimedOut):
-                error_iterator += 1
-                time.sleep(3)
-                print(
-                    f"Error: {step} in step_to_top_level_state:  , failed {error_iterator} times, Progress in file: {step_num / len(all_steps)}")
-        if not error_success:
-            raise NotImplementedError
+    # lemma = list(filter(lambda x: x.startswith("theorem "), all_steps))[0]
+    # out = {"path":theory_file_path, "theorem":lemma}
+    # ########################################### AND WRITE TO FILE #####################################
+    # with open(
+    #         f'minif2f_tt/{i}.json', "w"
+    # ) as fp:
+    #     json.dump(out, fp, indent=2)
+    # end = time.time()
+    # print(f"This took {end-start} seconds")
 
-        error_iterator = 0
-        error_success = False
-        while error_iterator < num_attempts and not error_success:
-            try:
-                proof_level = int(env.get_proof_level("default"))
-                error_success = True
-            except (Exception, FunctionTimedOut):
-                error_iterator += 1
-                time.sleep(3)
-                print(f"Error in get_proof_level:  , failed {error_iterator} times")
-        if not error_success:
-            raise NotImplementedError
+
+def process_facts(env, available_facts, problem_key, lemma, relative_path):
+    data = {}
+    data["problem_key"] = problem_key
+    data["lemma"] = lemma
+    data["relative_path"] = relative_path
+    try:
+        # First trim and clear premises names and stmts.
+        for fact_name, fact in available_facts.items():
+            fact_name = trim_string(fact_name)
+            fact = trim_string(fact)
+            if fact[:5] == "test ":
+                fact = fact[5:]
+            available_facts[fact_name] = fact
+        # First get locals ~ stmts might be repeated... locals are likely to be more useful.
+        # Keep only unique stmts
+        seen_stmts = set()
+        unique_available_facts = dict()
+        for fact_name, fact in available_facts.items():
+            if fact_name.startswith("local.") and (fact not in seen_stmts):
+                unique_available_facts[fact_name] = fact
+                seen_stmts.add(fact)
+        for fact_name, fact in available_facts.items():
+            if (not fact_name.startswith("local.")) and (fact not in seen_stmts):
+                unique_available_facts[fact_name] = fact
+                seen_stmts.add(fact)
+
+        available_facts = unique_available_facts
+
+        data["fact_name_to_pisa_names"] = {}
+
+        (
+            premise_name_to_pisa_names,
+            unsuccessful_premises_names,
+        ) = translate_premise_names_to_pisa_names(
+            env, available_facts
+        )
+        unsuccessful_premises_names = set(unsuccessful_premises_names)
+        data["fact_name_to_pisa_names"] = premise_name_to_pisa_names
+        if len(unsuccessful_premises_names) == 0:
+            available_facts_final = available_facts
         else:
-            if proof_level == 0:
-                pass
-        breakpoint()
+            available_facts_final = {}
+            for fact_name, fact in available_facts.items():
+                if fact_name in unsuccessful_premises_names:
+                    continue
+                available_facts_final[fact_name] = fact
+        data["available_facts"] = available_facts_final
+        data["num_unavailable_facts"] = len(unsuccessful_premises_names)
+        data["num_available_facts"] = len(available_facts_final)
+    except NotImplementedError:
+        data["error"] = "Available facts extraction error"
+    except FunctionTimedOut:
+        data["error"] = "Function timed out"
+    except EnvInitFailedException:
+        data["error"] = "Env init failed"
+    except ProceedToLineFailedException:
+        data["error"] = "Proceed to line failed"
+    except EmptyInitialStateException:
+        data["error"] = "Empty initial state"
+    except InitFailedException:
+        data["error"] = "Initialisation failed"
+    except AvailableFactsTimeout:
+        data["error"] = "Available facts timeout"
+    finally:
+        with smart_open(f"gs://n2formal-public-data-europe/datasets_mm/2023_01_21_pisa_available_facts_minif2f/problem_{problem_key}.json", "w") as fp:
+            json.dump(data, fp=fp, sort_keys=True, indent=2)
 
 
-    ########################################### AND WRITE TO FILE #####################################
-    with open(
-            f'{out_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
-    ) as fp:
-        json.dump(proofs, fp, indent=2)
+def trim_string(input_string):
+    return " ".join(input_string.replace("\n", " ").split())
 
-    with open(
-            f'{out_dir}_SH_on_decrease/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
-    ) as fsh:
-        json.dump(sledgehammer_proofs_on_decrease, fsh, indent=2)
+def translate_premise_names_to_pisa_names(env, premises_names: List[str]):
+    premise_name_to_pisa_names: Dict[str, List[str]] = defaultdict(list)
+    unsuccessful_premises_names: List[str] = []
 
-    with open(
-            f'{out_dir}_SH_on_increase/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
-    ) as fsh:
-        json.dump(sledgehammer_proofs_on_increase, fsh, indent=2)
+    for premise in premises_names:
+        possible_premise_names = []
+        suffix = premise.split("_")[-1]
+        prefix = premise.rsplit("_", 1)[0]
 
-    if len(wrong_thm_deps) > 0:
-        with open(
-                f'{error_log_dir}/{"_".join(file_relative_path.split("/")[-3:])}.json', "w"
-        ) as fpe:
-            json.dump(wrong_thm_deps, fpe, indent=2)
+        if suffix.isdigit():
+            premise_alternative = f"{prefix}({suffix})"
+            possible_premise_names.append(premise_alternative)
+            possible_premise_names.append(premise)
+        else:
+            possible_premise_names.append(premise)
 
+        isa_steps = [f"using {premise}" for premise in possible_premise_names]
+        step_successful = False
+
+        for step in isa_steps:
+            next_proof_state, _, done, _ = env.step_to_top_level_state(
+                step,
+                "default",
+                -1,
+            )
+
+            next_proof_state_clean = trim_string_optional(next_proof_state)
+            step_correct = True
+            for prefix_error in [
+              "Step error: Undefined fact", "Step error: Bad fact", "Step error: Inaccessible fact"
+            ]:
+                if prefix_error in next_proof_state_clean:
+                    print(f"FAILURE: {next_proof_state_clean}, premise: {premise}")
+                    step_correct = False
+                    break
+
+            if step_correct:
+                pisa_name = step.split()[-1]
+                premise_name_to_pisa_names[premise].append(pisa_name)
+                step_successful = True
+        if not step_successful:
+            unsuccessful_premises_names.append(premise)
+
+    return premise_name_to_pisa_names, unsuccessful_premises_names
+
+def trim_string_optional(input_string: Optional[str]) -> Optional[str]:
+    if input_string is None:
+        return None
+    return " ".join(input_string.replace("\n", " ").split()).strip()

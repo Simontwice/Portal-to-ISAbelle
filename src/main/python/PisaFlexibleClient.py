@@ -264,6 +264,7 @@ class IsaFlexEnv:
 
         return processed_global
 
+
     @func_set_timeout(300, allowOverride=True)
     def translate_premise_names(self, isabelle_state, premise_names: List[str]):
         """

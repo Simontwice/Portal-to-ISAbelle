@@ -41,19 +41,9 @@ def single_file_on_single_worker(
     error_log_dir,
     metadata_log_dir,
     isa_process_pid,
+    i
 ):
 
-    failed_init_count = 0
-    failed_step_count = 0
-    failed_global_facts_count = 0
-    failed_thm_deps_count = 0
-
-    failed_files = []
-    failed_step_files = []
-    failed_init_files = []
-    failed_global_facts_files = []
-    failed_thm_deps = {}
-    failed_step_files_verbose: List[int, List[str, int]] = []
     for num, theory_file_path in tqdm(enumerate([theory_file])):
 
         theory_file_path = os.path.expanduser(theory_file_path)
@@ -66,42 +56,8 @@ def single_file_on_single_worker(
             error_log_dir,
             metadata_log_dir,
             initialised_isa_env,
+            i=i
         )
-        if not file_processing_info["successful"]:
-            failed_files.append(theory_file_path)
-            if file_processing_info["init_failed"]:
-                failed_init_count += 1
-                failed_init_files.append(theory_file_path)
-                # metric_logging.log_scalar(f"failed_init_by_{who_does}", num, file)
-
-            if file_processing_info["step_failed"]:
-                failed_step_count += 1
-                failed_step_files_verbose.append(
-                    file_processing_info["step_failed_info"]
-                )
-                failed_step_files.append(theory_file_path)
-                # metric_logging.log_scalar(f"failed_step_by_{who_does}", num, failed_step_count)
-
-            if file_processing_info["global_facts_failed"]:
-                failed_global_facts_count += 1
-                failed_global_facts_files.append(theory_file_path)
-                # metric_logging.log_scalar(f"failed_global_facts_by_{who_does}", num, failed_global_facts_count)
-
-        if file_processing_info["thm_deps_failed"] is not None:
-            failed_thm_deps_lemmas = file_processing_info["thm_deps_failed"]
-            failed_thm_deps_count += len(failed_thm_deps_lemmas)
-            failed_thm_deps[theory_file_path] = failed_thm_deps_lemmas
-
-        logging.info(f"total failed_init_by: {failed_init_count}")
-        logging.info(f"total failed_during_step_by: {failed_step_count}")
-        logging.info(f"total failed_global_facts_by: {failed_global_facts_count}")
-        logging.info(f"total failed thm_deps_by: {failed_thm_deps_count}")
-
-    with open(
-        f"{metadata_log_dir}/mining_info_device_{theory_file.replace('/','.')}", "w"
-    ) as f:
-        json.dump(file_processing_info, f, indent=2)
-
     try:
         parent = psutil.Process(isa_process_pid)
         children = parent.children(recursive=True)
@@ -159,10 +115,11 @@ class DataIsaJob:
         self,
         theory_file_path="/home/szymon/minif2f/test/mathd_numbertheory_618.thy",
         isa_path="/home/szymon/Isabelle2021",
-        out_dir="gs://n2formal-public-data-europe/simontwice_data/mining_results_dev",
+        out_dir="gs://n2formal-public-data-europe/simontwice_data/universal_minif2f_theorems/",
         error_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_error_log_dev",
         metadata_log_dir="gs://n2formal-public-data-europe/simontwice_data/mining_metadata_log_dev",
-        failed_files_dir="gs://n2formal-public-data-europe/simontwice_data/not_initialised_files"
+        failed_files_dir="gs://n2formal-public-data-europe/simontwice_data/not_initialised_files",
+        i=-1,
     ):
         self.theory_file_path = theory_file_path
         self.isa_path = os.path.expanduser(isa_path)
@@ -171,6 +128,7 @@ class DataIsaJob:
         self.metadata_log_dir = metadata_log_dir
         self.failed_files_dir = failed_files_dir
         self.initialised_isa_env, self.isa_pid = self.rev_up_Isabelle_env()
+        self.i=i
 
     def execute(self):
 
@@ -187,8 +145,18 @@ class DataIsaJob:
             self.out_dir,
             self.error_log_dir,
             self.metadata_log_dir,
-            self.isa_pid
+            self.isa_pid,
+            self.i
         )
+        try:
+            parent = psutil.Process(self.isa_pid)
+            children = parent.children(recursive=True)
+            for process in children:
+                process.send_signal(signal.SIGTERM)
+            parent.send_signal(signal.SIGTERM)
+        except psutil.NoSuchProcess:
+            pass
+
 
     def rev_up_Isabelle_env(self):
         start_time_single = time.time()
@@ -311,5 +279,23 @@ class DataIsaJob:
             assert isa_instance.env is not None
             return isa_instance.env, pid
 
-job= DataIsaJob()
-job.execute()
+def get_all_thy_files(directory):
+    "returns a list of all .thy files in the directory"
+    files = [os.path.join(directory, filename) for filename in os.listdir(directory) if filename.endswith(".thy")]
+    frd = ["Symmetric_Polynomials.thy",  "Symmetric_Polynomials_Code.thy" , "Vieta.thy"]
+    files = [f for f in files if f not in frd]
+    return files
+
+with open("minif2f_test_theorems.json") as f:
+    order = json.load(f)
+
+names = {k:v["relative_path"].split("/")[-1] for k,v in order.items()}
+numbers = [0,7,12,13,15,23,29,33,41,45,49,53,61,65,67,70,72,79,80,81,95,97,98,104,106,112,115,131,133,137,143,151,178,191,192,202,215,218,226,228]
+breakpoint()
+for number, path in names.items():
+    number = int(number)
+    if number not in numbers:
+        continue
+    path_real = "/home/szymon/afp-2021-10-22/thys/Symmetric_Polynomials/"+path
+    job= DataIsaJob(theory_file_path=path_real, i=number)
+    job.execute()
