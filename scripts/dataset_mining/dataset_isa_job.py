@@ -286,7 +286,7 @@ def get_all_thy_files(directory):
     files = [f for f in files if f not in frd]
     return files
 
-with open("minif2f_test_theorems.json") as f:
+with open("minif2f_valid_theorems.json") as f:
     order = json.load(f)
 
 names = {k:v["relative_path"].split("/")[-1] for k,v in order.items()}

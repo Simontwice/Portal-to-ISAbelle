@@ -48,19 +48,15 @@ def single_file_to_data_play_szymon(
             print(f"Error in extract_theory_steps:  , failed {error_iterator} times")
     if not error_success:
         raise NotImplementedError
-    facts ={}
     for step_num, step in enumerate(all_steps):
-        try:
-            state, rew, done, _ = env.step_to_top_level_state(
-                step, "default", "default"
-            )
-            proof_level = int(env.get_proof_level())
-            if proof_level>0:
-                facts = env.all_facts_processed()
-                process_facts(env,available_facts=facts, problem_key=i,lemma="<lemmaname>",relative_path="<relpath>")
-                break
-        except (Exception, FunctionTimedOut):
-            error_iterator += 1
+        state, rew, done, _ = env.step_to_top_level_state(
+            step, "default", "default"
+        )
+        proof_level = int(env.get_proof_level())
+        if proof_level>0:
+            facts = env.all_facts_processed()
+            process_facts(env,available_facts=facts, problem_key=i,lemma="<lemmaname>",relative_path="<relpath>")
+            break
 
     # lemma = list(filter(lambda x: x.startswith("theorem "), all_steps))[0]
     # out = {"path":theory_file_path, "theorem":lemma}
@@ -137,7 +133,7 @@ def process_facts(env, available_facts, problem_key, lemma, relative_path):
     except AvailableFactsTimeout:
         data["error"] = "Available facts timeout"
     finally:
-        with smart_open(f"gs://n2formal-public-data-europe/datasets_mm/2023_01_21_pisa_available_facts_minif2f/problem_{problem_key}.json", "w") as fp:
+        with smart_open(f"gs://n2formal-public-data-europe/datasets_mm/2023_01_21_pisa_available_facts_minif2f_valid/problem_{problem_key}.json", "w") as fp:
             json.dump(data, fp=fp, sort_keys=True, indent=2)
 
 
