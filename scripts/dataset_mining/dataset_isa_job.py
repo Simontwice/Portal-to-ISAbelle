@@ -291,7 +291,6 @@ with open("minif2f_valid_theorems.json") as f:
 
 names = {k:v["relative_path"].split("/")[-1] for k,v in order.items()}
 numbers = [i+start for i in range(25)]
-breakpoint()
 for number, path in names.items():
     number = int(number)
     if number not in numbers:
