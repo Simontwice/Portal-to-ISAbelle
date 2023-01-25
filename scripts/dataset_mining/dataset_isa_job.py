@@ -4,7 +4,7 @@ import subprocess
 import time
 import sys
 from google.cloud import storage
-
+start=0
 conf_path = os.getcwd()
 
 upper=os.path.join( conf_path, '..' )
@@ -290,7 +290,7 @@ with open("minif2f_valid_theorems.json") as f:
     order = json.load(f)
 
 names = {k:v["relative_path"].split("/")[-1] for k,v in order.items()}
-numbers = [0,7,12,13,15,23,29,33,41,45,49,53,61,65,67,70,72,79,80,81,95,97,98,104,106,112,115,131,133,137,143,151,178,191,192,202,215,218,226,228]
+numbers = [i+start for i in range(25)]
 breakpoint()
 for number, path in names.items():
     number = int(number)
